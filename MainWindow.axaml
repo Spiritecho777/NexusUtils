@@ -1,0 +1,23 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="265"
+        x:Class="NexusUtils.MainWindow"
+        Title="NexusUtils" Height ="265" Width="450">
+
+  <Grid>
+    <Button Content="Ajouter une page" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" Click="AddSite_Click"/>
+    <ListBox x:Name="ListSite" Width="425" Height="205" VerticalAlignment="Top" Margin="0,50,0,0">
+      <ListBox.ItemTemplate>
+        <DataTemplate>
+          <StackPanel Orientation="Horizontal" Margin="5">
+            <Button Content="{Binding Name}" Width="150" Tag="{Binding}"/>
+            <Button Content="🔑" Width="20" Tag="{Binding}"/>
+            <Button Content="🗑️" Width="20" Tag="{Binding}" />
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </Grid>
+</Window>
