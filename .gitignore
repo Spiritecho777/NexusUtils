@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Cef/linx64/libcef.so
+/cef/winx64/libcef.dll
