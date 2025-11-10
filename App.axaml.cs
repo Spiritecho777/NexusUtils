@@ -60,15 +60,15 @@ namespace NexusUtils
                 WindowlessRenderingEnabled = true,
                 MultiThreadedMessageLoop = true,
                 UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                CachePath = Path.Combine(AppContext.BaseDirectory, "cef_cache"),
                 RootCachePath = Path.Combine(AppContext.BaseDirectory, "cef_root"),
+                CachePath = Path.Combine(AppContext.BaseDirectory, "cef_root\\cache"),
                 PersistSessionCookies = true,
                 PersistUserPreferences = true
             };
 
             var app = new CustomCefApp();
 
-            CefRuntime.Initialize(mainArgs, settings, null);
+            CefRuntime.Initialize(mainArgs, settings, app, IntPtr.Zero);
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
             {
@@ -123,6 +123,152 @@ namespace NexusUtils
                 commandLine.AppendSwitch("disable-gpu-vsync");
                 //commandLine.AppendSwitchWithValue("use-gl", "angle");
                 //commandLine.AppendSwitchWithValue("log-severity", "warning");
+                commandLine.AppendSwitch("disable-software-rasterizer");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-driver-bug-workarounds");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
+                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
+                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                commandLine.AppendSwitch("disable-gpu-program-cache");
+                commandLine.AppendSwitch("disable-gpu-rasterization");
+                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                commandLine.AppendSwitch("disable-gpu-vsync");
+                commandLine.AppendSwitch("disable-gpu-early-init");
+                commandLine.AppendSwitch("disable-gpu-sandbox");
+                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                commandLine.AppendSwitch("disable-gpu-watchdog");
             }
         }
 
