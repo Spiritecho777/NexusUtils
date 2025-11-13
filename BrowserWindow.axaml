@@ -5,5 +5,5 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="NexusUtils.BrowserWindow"
         Title="BrowserWindow">
-  <TabControl x:Name="_tabControl"/>
+  <WebView x:Name="_WebBrowser"/>
 </Window>

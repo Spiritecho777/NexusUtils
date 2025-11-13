@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.VisualTree;
 using NexusUtils.Classe;
 using NexusUtils.Popup;
-//using NexusUtils.Control;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;

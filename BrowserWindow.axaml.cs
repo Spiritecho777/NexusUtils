@@ -1,19 +1,18 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using AvaloniaWebView;
 using NexusUtils.Classe;
-using NexusUtils.Control;
+using Pango;
 using System;
 using System.Diagnostics;
 using System.Linq;
-using Xilium.CefGlue;
+
 
 namespace NexusUtils;
 
 public partial class BrowserWindow : Window
 {
-    //private readonly TabControl _tabControl = new();
-
     public BrowserWindow(SiteItem site)
     {
         InitializeComponent();
@@ -22,30 +21,41 @@ public partial class BrowserWindow : Window
         Width = 1024;
         Height = 768;
 
-        Content = _tabControl;
+        _WebBrowser.Url = new Uri (site.Url);
     }
 
     public void OpenTab(SiteItem site)
     {
-        var browser = new BrowserTab(site);
         var tabItem = new TabItem
         {
             Header = site.Name,
-            Content = browser
         };
 
-        _tabControl.Items.Add(tabItem);
-        _tabControl.SelectedItem = tabItem;
-    }
-}
+        #region Injection javascript pour auto-login
+        _WebBrowser.NavigationCompleted += (sender, args) =>
+        {
+                string login = site.Credentials;
+                string password = site.Password;
 
-public class BrowserTab : UserControl
-{
-    public BrowserTab(SiteItem site)
-    {
-        Debug.WriteLine("Opening URL: " + site.Url);
-        var browserView = new CefBrowserView(site.Url);
+                string script = $@"
+                (function() 
+                {{
+                    var loginInput = document.querySelector('input[name=usermail], input[id=username]');
+                    if(loginInput) 
+                    {{
+                        loginInput.value = '{login.Replace("'", "\\'")}';
+                    }}
+                            
+                    var passwordInput = document.querySelector('input[type=password], input[name=password], input[id=password]');
+                    if(passwordInput)
+                    {{
+                        passwordInput.value = '{password.Replace("'", "\\'")}';
+                    }}
+                }})();
+                ";
 
-        Content = browserView;
+                _WebBrowser.ExecuteScriptAsync(script);
+        };
     }
+    #endregion
 }

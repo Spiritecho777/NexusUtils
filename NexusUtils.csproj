@@ -22,17 +22,18 @@
     <PackageReference Include="CefGlue.Avalonia" Version="120.6099.211" />
     <PackageReference Include="CefGlue.Common" Version="120.6099.211" />
     <PackageReference Include="System.Text.Json" Version="9.0.9" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-	<None Include="cef\winx64\**\*.*">
-		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	</None>
+    <PackageReference Include="WebView.Avalonia" Version="11.0.0.1" />
+    <PackageReference Include="WebView.Avalonia.Desktop" Version="11.0.0.1" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
 	<None Include="cef\linuxx64\**\*.*">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Control\" />
   </ItemGroup>
 
 </Project>
