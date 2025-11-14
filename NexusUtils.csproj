@@ -21,6 +21,7 @@
     </PackageReference>
     <PackageReference Include="CefGlue.Avalonia" Version="120.6099.211" />
     <PackageReference Include="CefGlue.Common" Version="120.6099.211" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.9" />
     <PackageReference Include="System.Text.Json" Version="9.0.9" />
     <PackageReference Include="WebView.Avalonia" Version="11.0.0.1" />
     <PackageReference Include="WebView.Avalonia.Desktop" Version="11.0.0.1" />

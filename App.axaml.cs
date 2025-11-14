@@ -44,7 +44,7 @@ namespace NexusUtils
                 ? Path.Combine(AppContext.BaseDirectory, "cef", "winx64")
                 : Path.Combine(AppContext.BaseDirectory, "cef", "linx64");
             
-            CefRuntime.Load(cefPath);
+            CefRuntime.Load();
 
             // CEF init
             var mainArgs = new CefMainArgs(Environment.GetCommandLineArgs());
