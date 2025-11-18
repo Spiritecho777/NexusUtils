@@ -30,20 +30,44 @@ namespace NexusUtils
         public override void OnFrameworkInitializationCompleted()
         {
             bool isNewInstance = AcquireCrossPlatformMutex("NexusUtils_Mutex");
-            if (!isNewInstance) 
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                 {
-                    new AlerteWindow("Une autre instance de l'application est déjà en cours d'exécution.")
-                        .ShowDialog(desktop.MainWindow);
-                    desktop.Shutdown();
+                    desktop.MainWindow = new MainWindow();
+                    desktop.MainWindow?.Show();
+
+                    if (!isNewInstance)
+                    {
+
+                        new AlerteWindow("Une autre instance de l'application est déjà en cours d'exécution.")
+                            .ShowDialog(desktop.MainWindow);
+                        desktop.Shutdown();
+                        return;
+                    }
+
+                    desktop.Exit += OnAppExit;
                 }
-                return;
             }
-            string cefPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                ? Path.Combine(AppContext.BaseDirectory, "cef", "winx64")
-                : Path.Combine(AppContext.BaseDirectory, "cef", "linx64");
-            
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                if (!isNewInstance)
+                {
+                    if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    {
+                        new AlerteWindow("...").ShowDialog(desktop.MainWindow);
+                        desktop.Shutdown();
+                    }
+                    return;
+                }
+            }
+
+            /*string cefPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? Path.Combine(AppContext.BaseDirectory, "Cef", "winx64")
+                : Path.Combine(AppContext.BaseDirectory, "Cef", "linx64");*/
+
             CefRuntime.Load();
 
             // CEF init
