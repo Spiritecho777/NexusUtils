@@ -1,12 +1,15 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Metadata;
 using NexusUtils.Popup;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using Xilium.CefGlue;
 
@@ -29,78 +32,76 @@ namespace NexusUtils
 
         public override void OnFrameworkInitializationCompleted()
         {
+            InitializeCef();
+
             bool isNewInstance = AcquireCrossPlatformMutex("NexusUtils_Mutex");
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-                {
-                    desktop.MainWindow = new MainWindow();
-                    desktop.MainWindow?.Show();
+                desktop.MainWindow = new MainWindow();
 
+                desktop.MainWindow.Opened += async (_, __) =>
+                {
                     if (!isNewInstance)
                     {
-
-                        new AlerteWindow("Une autre instance de l'application est déjà en cours d'exécution.")
-                            .ShowDialog(desktop.MainWindow);
-                        desktop.Shutdown();
-                        return;
-                    }
-
-                    desktop.Exit += OnAppExit;
-                }
-            }
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                if (!isNewInstance)
-                {
-                    if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-                    {
-                        new AlerteWindow("...").ShowDialog(desktop.MainWindow);
+                        var alert = new AlerteWindow("Une autre instance de l'application est déjà en cours d'exécution.");
+                        await alert.ShowDialog(desktop.MainWindow);
                         desktop.Shutdown();
                     }
-                    return;
-                }
-            }
+                };
 
-            /*string cefPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                ? Path.Combine(AppContext.BaseDirectory, "Cef", "winx64")
-                : Path.Combine(AppContext.BaseDirectory, "Cef", "linx64");*/
-
-            CefRuntime.Load();
-
-            // CEF init
-            var mainArgs = new CefMainArgs(Environment.GetCommandLineArgs());
-            var exitCode = CefRuntime.ExecuteProcess(mainArgs, null, IntPtr.Zero);
-            if (exitCode >= 0)
-            {
-                Environment.Exit(exitCode);
-            }
-
-            CefRuntime.Load();
-            var settings = new CefSettings
-            {
-                WindowlessRenderingEnabled = true,
-                MultiThreadedMessageLoop = true,
-                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                RootCachePath = Path.Combine(AppContext.BaseDirectory, "cef_root"),
-                CachePath = Path.Combine(AppContext.BaseDirectory, "cef_root\\cache"),
-                PersistSessionCookies = true,
-                PersistUserPreferences = true
-            };
-
-            var app = new CustomCefApp();
-
-            CefRuntime.Initialize(mainArgs, settings, app, IntPtr.Zero);
-
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
-            {
-                desktopLifetime.Exit += OnAppExit;
-                desktopLifetime.MainWindow = new MainWindow();
+                desktop.Exit += OnAppExit;
             }
 
             base.OnFrameworkInitializationCompleted();
+        }
+            //string cefPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+
+        // CEF init
+        private void InitializeCef() 
+        {
+            try
+            {
+                var mainArgs = new CefMainArgs(Environment.GetCommandLineArgs());
+                var app = new CustomCefApp();
+
+                var exitCode = CefRuntime.ExecuteProcess(mainArgs, app, IntPtr.Zero);
+                if (exitCode >= 0)
+                {
+                    Environment.Exit(exitCode);
+                }
+
+                CefRuntime.Load();
+                var settings = new CefSettings
+                {
+                    WindowlessRenderingEnabled = false,
+                    MultiThreadedMessageLoop = false,
+                    UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    RootCachePath = Path.Combine(AppContext.BaseDirectory, "cef_root"),
+                    CachePath = Path.Combine(AppContext.BaseDirectory, "cef_root/cache"),
+                    PersistSessionCookies = true,
+                    PersistUserPreferences = true,
+                    NoSandbox = true,
+                    LogSeverity = CefLogSeverity.Warning,
+                    CommandLineArgsDisabled = false
+                };
+
+                Directory.CreateDirectory(settings.RootCachePath);
+                Directory.CreateDirectory(settings.CachePath);
+
+                CefRuntime.Initialize(mainArgs, settings, app, IntPtr.Zero);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("CEF Initialization Error: " + ex.Message);
+                throw;
+            }
+            
+            /*if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
+            {
+                desktopLifetime.Exit += OnAppExit;
+                desktopLifetime.MainWindow = new MainWindow();
+            }*/
         }
 
         private bool AcquireCrossPlatformMutex(string mutexName)
@@ -108,6 +109,7 @@ namespace NexusUtils
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 mutex = new Mutex(true, mutexName, out bool isNewInstance);
+                mutexAcquired = isNewInstance;
                 return isNewInstance;
             }
             else
@@ -118,10 +120,27 @@ namespace NexusUtils
                 {
                     if (File.Exists(lockPath))
                     {
-                        return false;
+                        // Vérifier si le processus existe toujours
+                        try
+                        {
+                            string pidStr = File.ReadAllText(lockPath);
+                            if (int.TryParse(pidStr, out int pid))
+                            {
+                                Process.GetProcessById(pid);
+                                // Le processus existe, on ne peut pas acquérir le mutex
+                                return false;
+                            }
+                        }
+                        catch
+                        {
+                            // Le processus n'existe plus, supprimer le fichier
+                            File.Delete(lockPath);
+                        }
                     }
 
                     File.WriteAllText(lockPath, Process.GetCurrentProcess().Id.ToString());
+                    mutexAcquired = true;
+
                     AppDomain.CurrentDomain.ProcessExit += (_, _) =>
                     {
                         try { File.Delete(lockPath); } catch { }
@@ -141,175 +160,100 @@ namespace NexusUtils
         {
             protected override void OnBeforeCommandLineProcessing(string processType, CefCommandLine commandLine)
             {
-                commandLine.AppendSwitch("disable-gpu");
-                commandLine.AppendSwitch("disable-gpu-compositing");
-                commandLine.AppendSwitch("enable-begin-frame-scheduling");
+                // Switches communs
                 commandLine.AppendSwitch("disable-gpu-vsync");
-                //commandLine.AppendSwitchWithValue("use-gl", "angle");
-                //commandLine.AppendSwitchWithValue("log-severity", "warning");
-                commandLine.AppendSwitch("disable-software-rasterizer");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-driver-bug-workarounds");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
                 commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
-                commandLine.AppendSwitch("disable-gpu-shader-disk-cache");
-                commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
-                commandLine.AppendSwitch("disable-gpu-program-cache");
-                commandLine.AppendSwitch("disable-gpu-rasterization");
-                commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
-                commandLine.AppendSwitch("disable-gpu-vsync");
-                commandLine.AppendSwitch("disable-gpu-early-init");
-                commandLine.AppendSwitch("disable-gpu-sandbox");
-                commandLine.AppendSwitch("disable-gpu-process-crash-limit");
-                commandLine.AppendSwitch("disable-gpu-watchdog");
+                //commandLine.AppendSwitch("disable-software-rasterizer");
+
+                // Switches spécifiques Linux pour résoudre les problèmes GPU
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    // CRITICAL - Single process mode pour WSL
+                    commandLine.AppendSwitch("single-process");
+                    commandLine.AppendSwitch("no-zygote");
+                    commandLine.AppendSwitch("no-sandbox");
+                    commandLine.AppendSwitch("disable-setuid-sandbox");
+
+                    // GPU complètement désactivé
+                    commandLine.AppendSwitch("disable-gpu");
+                    commandLine.AppendSwitch("disable-gpu-compositing");
+                    commandLine.AppendSwitch("disable-accelerated-2d-canvas");
+                    commandLine.AppendSwitch("disable-3d-apis");
+
+                    // Rendu software
+                    commandLine.AppendSwitch("use-gl", "swiftshader");
+                    commandLine.AppendSwitch("disable-software-rasterizer");
+
+                    // Désactiver features problématiques
+                    commandLine.AppendSwitch("disable-dev-shm-usage");
+                    commandLine.AppendSwitch("disable-features=VizDisplayCompositor");
+                    commandLine.AppendSwitch("disable-features=NetworkService");
+                    commandLine.AppendSwitch("disable-features=AudioServiceOutOfProcess");
+
+                    // Audio
+                    commandLine.AppendSwitch("disable-audio-output");
+                    commandLine.AppendSwitch("mute-audio");
+
+                    // Éviter les crashs X11
+                    commandLine.AppendSwitch("disable-gpu-sandbox");
+                    commandLine.AppendSwitch("disable-gpu-watchdog");
+                    commandLine.AppendSwitch("disable-gpu-vsync");
+                    commandLine.AppendSwitch("disable-background-timer-throttling");
+                    commandLine.AppendSwitch("disable-backgrounding-occluded-windows");
+                    commandLine.AppendSwitch("disable-breakpad");
+
+                    // Logging
+                    commandLine.AppendSwitch("log-severity");
+                }
+                else
+                {
+                    // Windows
+                    commandLine.AppendSwitch("disable-gpu-compositing");
+                    commandLine.AppendSwitch("enable-begin-frame-scheduling");
+                    commandLine.AppendSwitch("disable-gpu-sandbox");
+                    commandLine.AppendSwitch("disable-gpu-driver-bug-workarounds");
+                    commandLine.AppendSwitch("disable-gpu-process-crash-limit");
+                    commandLine.AppendSwitch("disable-gpu-watchdog");
+                    commandLine.AppendSwitch("disable-gpu-memory-buffer-compositor-resources");
+                    commandLine.AppendSwitch("disable-gpu-program-cache");
+                    commandLine.AppendSwitch("disable-gpu-rasterization");
+                    commandLine.AppendSwitch("disable-gpu-threaded-texture-mailbox");
+                    commandLine.AppendSwitch("disable-gpu-early-init");
+                    commandLine.AppendSwitch("disable-surfaces");
+                }
             }
         }
 
         // Méthode appelée lorsque l'application se termine proprement
         private void OnAppExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
         {
+            CleanupCef();
             DeleteFile();
-            if (mutexAcquired && mutex is not null)
-            {
-                try { mutex.ReleaseMutex(); } catch { }
-            }
+            ReleaseMutex();
         }
 
         // Méthode appelée lorsque le processus est tué ou termine
         private void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
+            CleanupCef();
             DeleteFile();
+            ReleaseMutex();
+        }
+
+        private void CleanupCef()
+        {
+            try
+            {
+                CefRuntime.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Erreur lors du nettoyage CEF: {ex.Message}");
+            }
+        }
+
+        private void ReleaseMutex()
+        {
             if (mutexAcquired && mutex is not null)
             {
                 try { mutex.ReleaseMutex(); } catch { }
