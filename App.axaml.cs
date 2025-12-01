@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -22,6 +23,12 @@ namespace NexusUtils
 
         public App()
         {
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+            {
+                Exception ex = (Exception)e.ExceptionObject;
+                Debug.WriteLine($"Unhandled Exception: {ex.Message}\n{ex.StackTrace}");
+            };
+
             AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit; // ProcessExit appelé même si l'application est tuée.
         }
 
@@ -32,7 +39,7 @@ namespace NexusUtils
 
         public override void OnFrameworkInitializationCompleted()
         {
-            InitializeCef();
+            //InitializeCef();
 
             bool isNewInstance = AcquireCrossPlatformMutex("NexusUtils_Mutex");
 
@@ -58,7 +65,8 @@ namespace NexusUtils
             //string cefPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 
         // CEF init
-        private void InitializeCef() 
+        //private void InitializeCef()      
+        public static void InitializeCef() 
         {
             try
             {
@@ -96,12 +104,6 @@ namespace NexusUtils
                 Debug.WriteLine("CEF Initialization Error: " + ex.Message);
                 throw;
             }
-            
-            /*if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
-            {
-                desktopLifetime.Exit += OnAppExit;
-                desktopLifetime.MainWindow = new MainWindow();
-            }*/
         }
 
         private bool AcquireCrossPlatformMutex(string mutexName)
@@ -152,7 +154,7 @@ namespace NexusUtils
                     return false;
                 }
             }
-        }
+        }               
 
         #region Manipulation faite suite a la fermeture - crash du logiciel
 
@@ -169,7 +171,7 @@ namespace NexusUtils
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
                     // CRITICAL - Single process mode pour WSL
-                    commandLine.AppendSwitch("single-process");
+                    //commandLine.AppendSwitch("single-process");
                     commandLine.AppendSwitch("no-zygote");
                     commandLine.AppendSwitch("no-sandbox");
                     commandLine.AppendSwitch("disable-setuid-sandbox");

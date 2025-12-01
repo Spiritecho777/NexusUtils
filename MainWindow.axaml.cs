@@ -4,6 +4,7 @@ using NexusUtils.Classe;
 using NexusUtils.Popup;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.ConstrainedExecution;
 using System.Threading.Tasks;
@@ -38,11 +39,19 @@ namespace NexusUtils
             }
         }
 
-        private void AddSite_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        private async void AddSite_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            var popup = new AddSitePopup();
-            popup.Closed += (_, _) => UpdateSiteList();
-            popup.Show();
+            try
+            {
+                var popup = new AddSitePopup();
+                popup.Closed += (_,_) => UpdateSiteList();
+                popup.Show();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error showing AddSitePopup: {ex.Message}");
+                Debug.WriteLine(ex.StackTrace);
+            }
         }
 
         private void Popup_Closed(object? sender, EventArgs e)

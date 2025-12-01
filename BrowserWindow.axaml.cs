@@ -15,6 +15,8 @@ public partial class BrowserWindow : Window
 {
     public BrowserWindow(SiteItem site)
     {
+        App.InitializeCef();
+
         InitializeComponent();
 
         Title = site.Name;
