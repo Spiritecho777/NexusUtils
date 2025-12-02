@@ -106,58 +106,6 @@ namespace NexusUtils
             }
         }
 
-        private bool AcquireCrossPlatformMutex(string mutexName)
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                mutex = new Mutex(true, mutexName, out bool isNewInstance);
-                mutexAcquired = isNewInstance;
-                return isNewInstance;
-            }
-            else
-            {
-                string lockPath = Path.Combine(Path.GetTempPath(), mutexName + ".lock");
-
-                try
-                {
-                    if (File.Exists(lockPath))
-                    {
-                        // Vérifier si le processus existe toujours
-                        try
-                        {
-                            string pidStr = File.ReadAllText(lockPath);
-                            if (int.TryParse(pidStr, out int pid))
-                            {
-                                Process.GetProcessById(pid);
-                                // Le processus existe, on ne peut pas acquérir le mutex
-                                return false;
-                            }
-                        }
-                        catch
-                        {
-                            // Le processus n'existe plus, supprimer le fichier
-                            File.Delete(lockPath);
-                        }
-                    }
-
-                    File.WriteAllText(lockPath, Process.GetCurrentProcess().Id.ToString());
-                    mutexAcquired = true;
-
-                    AppDomain.CurrentDomain.ProcessExit += (_, _) =>
-                    {
-                        try { File.Delete(lockPath); } catch { }
-                    };
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }               
-
-        #region Manipulation faite suite a la fermeture - crash du logiciel
-
         public class CustomCefApp : CefApp
         {
             protected override void OnBeforeCommandLineProcessing(string processType, CefCommandLine commandLine)
@@ -226,6 +174,7 @@ namespace NexusUtils
             }
         }
 
+        #region Manipulation faite suite a la fermeture - crash du logiciel
         // Méthode appelée lorsque l'application se termine proprement
         private void OnAppExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
         {
@@ -281,6 +230,57 @@ namespace NexusUtils
                 if (fileSize == 0 && File.Exists(filePath2))
                 {
                     File.Delete(filePath2);
+                }
+            }
+        }
+
+        //Mutex cross-platform
+        private bool AcquireCrossPlatformMutex(string mutexName)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                mutex = new Mutex(true, mutexName, out bool isNewInstance);
+                mutexAcquired = isNewInstance;
+                return isNewInstance;
+            }
+            else
+            {
+                string lockPath = Path.Combine(Path.GetTempPath(), mutexName + ".lock");
+
+                try
+                {
+                    if (File.Exists(lockPath))
+                    {
+                        // Vérifier si le processus existe toujours
+                        try
+                        {
+                            string pidStr = File.ReadAllText(lockPath);
+                            if (int.TryParse(pidStr, out int pid))
+                            {
+                                Process.GetProcessById(pid);
+                                // Le processus existe, on ne peut pas acquérir le mutex
+                                return false;
+                            }
+                        }
+                        catch
+                        {
+                            // Le processus n'existe plus, supprimer le fichier
+                            File.Delete(lockPath);
+                        }
+                    }
+
+                    File.WriteAllText(lockPath, Process.GetCurrentProcess().Id.ToString());
+                    mutexAcquired = true;
+
+                    AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+                    {
+                        try { File.Delete(lockPath); } catch { }
+                    };
+                    return true;
+                }
+                catch
+                {
+                    return false;
                 }
             }
         }
