@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(Tuto LANGUAGES CXX)
+project(NexusUtils LANGUAGES CXX)
 
 include(qt.cmake)
 
