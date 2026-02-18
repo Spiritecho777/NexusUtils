@@ -51,7 +51,7 @@ void AddSitePopup::onAdd()
 	site.name = name;
 	site.url = url; 
 
-	siteManager.addSite(site); 
+	siteManager.addSite(name,url); 
 	accept();
 }
 

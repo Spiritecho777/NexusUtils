@@ -2,22 +2,42 @@
   "version": 3,
   "configurePresets": [
     {
-      "name": "Debug-x64",
+      "name": "Debug-windows-x64",
       "displayName": "Debug (x64)",
       "binaryDir": "${sourceDir}/out/build/debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+        "OPENSSL_ROOT_DIR": "C:/dev/vcpkg/installed/x64-windows-static"
       },
       "inherits": [
         "Qt-Default"
       ]
     },
     {
-      "name": "Release-x64",
+      "name": "Debug-linux-x64",
+      "displayName": "Debug (x64)",
+      "binaryDir": "${sourceDir}/out/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OPENSSL_ROOT_DIR": "/usr",
+        "OPENSSL_CRYPTO_LIBRARY": "/usr/lib/libcrypto.so",
+        "OPENSSL_SSL_LIBRARY": "/usr/lib/libssl.so"
+      },
+      "inherits": [
+        "Qt-Default"
+      ]
+    },
+    {
+      "name": "Release-windows-x64",
       "displayName": "Release (x64)",
       "binaryDir": "${sourceDir}/out/build/release",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+        "OPENSSL_ROOT_DIR": "C:/dev/vcpkg/installed/x64-windows-static"
       },
       "inherits": [
         "Qt-Default"
@@ -54,7 +74,7 @@
   ],
   "vendor": {
     "qt-project.org/Presets": {
-      "checksum": "2Pt+goPiHL0oI96UH/KeneByw3c="
+      "checksum": "yxgCpNNH1eTccyXhTrfkNpHSPyw="
     }
   }
 }

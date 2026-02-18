@@ -47,7 +47,7 @@ void CredSitePopup::onAdd() {
 	site.username = identifiant;
 	site.password = password;
 
-	siteManager.addCredsSite(site);
+	siteManager.addCredsSite(identifiant,password,site);
 
 	accept();
 }

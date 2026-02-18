@@ -6,6 +6,12 @@ include(qt.cmake)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+find_package(OpenSSL REQUIRED)
+if (WIN32)
+    add_definitions(-DOPENSSL_USE_STATIC_LIBS)
+endif()
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR}
     COMPONENTS
@@ -38,4 +44,6 @@ set_target_properties(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         Qt::Widgets
+        OpenSSL::SSL
+        OpenSSL::Crypto
 )
