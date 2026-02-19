@@ -33,11 +33,14 @@ CredSitePopup::CredSitePopup(const SiteItem& site, QWidget* parent) : QDialog(pa
 	connect(btnCancel, &QPushButton::clicked, this, &CredSitePopup::onCancel); 
 	connect(btnAdd, &QPushButton::clicked, this, &CredSitePopup::onAdd); 
 
-	buttons->addWidget(btnCancel); 
-	buttons->addStretch(); 
 	buttons->addWidget(btnAdd); 
+	buttons->addStretch(); 
+	buttons->addWidget(btnCancel); 
 
 	layout->addLayout(buttons);
+
+	editUser->setText(site.username);
+	editPassword->setText(site.password);
 }
 
 void CredSitePopup::onAdd() {

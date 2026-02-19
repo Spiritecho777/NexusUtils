@@ -30,9 +30,9 @@ AddSitePopup::AddSitePopup(QWidget* parent) : QDialog(parent)
 	QPushButton *btnAdd = new QPushButton("Ajouter"); 
 	connect(btnCancel, &QPushButton::clicked, this, &AddSitePopup::onCancel); 
 	connect(btnAdd, &QPushButton::clicked, this, &AddSitePopup::onAdd); 
-	buttons->addWidget(btnCancel); 
-	buttons->addStretch(); 
 	buttons->addWidget(btnAdd); 
+	buttons->addStretch(); 
+	buttons->addWidget(btnCancel); 
 	layout->addLayout(buttons);
 }
 

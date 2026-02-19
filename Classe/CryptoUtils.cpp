@@ -4,10 +4,13 @@
 #include <QRandomGenerator>
 #include <QSysInfo>
 #include <QStorageInfo>
+#include <QSettings>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
+#include <openssl/crypto.h>
 
 static QString computeMachineGuid();
+static void secureWipe(QByteArray& arr);
 
 CryptoUtils::CryptoUtils()
 {
@@ -20,7 +23,7 @@ QByteArray CryptoUtils::deriveKey(const QByteArray& password, const QByteArray& 
     QByteArray key;
     key.resize(keySize);
 
-    PKCS5_PBKDF2_HMAC(
+    int ok = PKCS5_PBKDF2_HMAC(
         password.constData(),
         password.size(),
         reinterpret_cast<const unsigned char*>(salt.constData()),
@@ -31,139 +34,173 @@ QByteArray CryptoUtils::deriveKey(const QByteArray& password, const QByteArray& 
         reinterpret_cast<unsigned char*>(key.data())
     );
 
+    if (!ok) {
+        secureWipe(key);
+        return{};
+    }
+
     return key;
 }
 
 QByteArray CryptoUtils::encryptBytes(const QByteArray& plain) const
 {
-    // 1) Générer un IV (16 bytes)
+    if (plain.isEmpty())
+        return {};
+
     QByteArray iv(16, 0);
-    RAND_bytes(reinterpret_cast<unsigned char*>(iv.data()), iv.size());
+    if (RAND_bytes(reinterpret_cast<unsigned char*>(iv.data()), iv.size()) != 1)
+        return {};
 
-    // 2) Dériver la clé
     QByteArray key = deriveKey(password, iv);
+    if (key.isEmpty())
+        return {};
 
-    // 3) Préparer le contexte AES
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) {
+        secureWipe(key);
+        return {};
+    }
+
     QByteArray encrypted;
     encrypted.reserve(plain.size() + 32);
-
-    // 4) Ajouter l’IV au début du fichier chiffré
     encrypted.append(iv);
 
-    EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr,
+    if (EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr,
         reinterpret_cast<const unsigned char*>(key.data()),
-        reinterpret_cast<const unsigned char*>(iv.data()));
+        reinterpret_cast<const unsigned char*>(iv.data())) != 1) {
+        secureWipe(key);
+        EVP_CIPHER_CTX_free(ctx);
+        return {};
+    }
 
     QByteArray buffer;
     buffer.resize(plain.size() + 32);
 
     int outLen = 0;
-    EVP_EncryptUpdate(ctx,
+    if (EVP_EncryptUpdate(ctx,
         reinterpret_cast<unsigned char*>(buffer.data()),
         &outLen,
         reinterpret_cast<const unsigned char*>(plain.data()),
-        plain.size());
+        plain.size()) != 1) {
+        secureWipe(key);
+        secureWipe(buffer);
+        EVP_CIPHER_CTX_free(ctx);
+        return {};
+    }
 
     encrypted.append(buffer.constData(), outLen);
 
     int finalLen = 0;
-    EVP_EncryptFinal_ex(ctx,
+    if (EVP_EncryptFinal_ex(ctx,
         reinterpret_cast<unsigned char*>(buffer.data()),
-        &finalLen);
+        &finalLen) != 1) {
+        secureWipe(key);
+        secureWipe(buffer);
+        EVP_CIPHER_CTX_free(ctx);
+        return {};
+    }
 
     encrypted.append(buffer.constData(), finalLen);
 
+    secureWipe(key);
+    secureWipe(buffer);
     EVP_CIPHER_CTX_free(ctx);
 
     return encrypted;
 }
+
 
 QByteArray CryptoUtils::decryptBytes(const QByteArray& encrypted) const
 {
     if (encrypted.size() < 16)
         return {};
 
-    // 1) Extraire l’IV (salt)
     QByteArray iv = encrypted.left(16);
     QByteArray cipher = encrypted.mid(16);
 
-    // 2) Dériver la clé
     QByteArray key = deriveKey(password, iv);
+    if (key.isEmpty())
+        return {};
 
-    // 3) Déchiffrer
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) {
+        secureWipe(key);
+        return {};
+    }
+
     QByteArray decrypted;
     decrypted.resize(cipher.size() + 32);
 
-    EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr,
+    if (EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr,
         reinterpret_cast<const unsigned char*>(key.data()),
-        reinterpret_cast<const unsigned char*>(iv.data()));
+        reinterpret_cast<const unsigned char*>(iv.data())) != 1) {
+        secureWipe(key);
+        EVP_CIPHER_CTX_free(ctx);
+        return {};
+    }
 
     int outLen = 0;
-    EVP_DecryptUpdate(ctx,
+    if (EVP_DecryptUpdate(ctx,
         reinterpret_cast<unsigned char*>(decrypted.data()),
         &outLen,
         reinterpret_cast<const unsigned char*>(cipher.data()),
-        cipher.size());
+        cipher.size()) != 1) {
+        secureWipe(key);
+        secureWipe(decrypted);
+        EVP_CIPHER_CTX_free(ctx);
+        return {};
+    }
 
     int finalLen = 0;
-    EVP_DecryptFinal_ex(ctx,
-        reinterpret_cast<unsigned char*>(decrypted.data()),
-        &finalLen);
-
-    EVP_CIPHER_CTX_free(ctx);
+    if (EVP_DecryptFinal_ex(ctx,
+        reinterpret_cast<unsigned char*>(decrypted.data() + outLen),
+        &finalLen) != 1) {
+        secureWipe(key);
+        secureWipe(decrypted);
+        EVP_CIPHER_CTX_free(ctx);
+        return {};
+    }
 
     decrypted.resize(outLen + finalLen);
+
+    secureWipe(key);
+    EVP_CIPHER_CTX_free(ctx);
+
     return decrypted;
 }
 
+
 static QString computeMachineGuid()
 {
-    // Username
-    QString user = qEnvironmentVariable("USERNAME");
-    if (user.isEmpty())
-        user = qEnvironmentVariable("USER");
+    QString guid;
 
-    // OS info
-    QString osVersion = QSysInfo::prettyProductName();
-    QString osArch = QSysInfo::currentCpuArchitecture();
-    QString osDesc = QSysInfo::kernelType() + " " + QSysInfo::kernelVersion();
-
-    // System drive
 #ifdef _WIN32
-    QString systemDrive = QString::fromUtf8(qgetenv("SystemDrive"));
-    if (systemDrive.isEmpty())
-        systemDrive = "C:/";
+    // MachineGuid Windows
+    QSettings reg("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography",
+        QSettings::NativeFormat);
+    guid = reg.value("MachineGuid").toString();
+    if (guid.isEmpty())
+        guid = "FallbackMachineGuid";
+#elif defined(__linux__)
+    // Linux machine-id
+    QFile f("/etc/machine-id");
+    if (f.open(QIODevice::ReadOnly | QIODevice::Text))
+        guid = QString::fromUtf8(f.readAll()).trimmed();
+    if (guid.isEmpty())
+        guid = "FallbackMachineId";
 #else
-    QString systemDrive = "/";
+   guid = "FallbackGenericId";
 #endif
 
-    QStorageInfo drive(systemDrive);
-
-    QString driveFormat = drive.fileSystemType().isEmpty()
-        ? "UnknownFormat"
-        : QString::fromUtf8(drive.fileSystemType());
-
-    QString driveLabel = drive.displayName().isEmpty()
-        ? "UnknownLabel"
-        : drive.displayName();
-
-    QString driveName = drive.rootPath().isEmpty()
-        ? "UnknownDrive"
-        : drive.rootPath();
-
-    // Build raw string (same logic as C#)
-    QString raw = user + "|" +
-        osVersion + "|" +
-        osArch + "|" +
-        osDesc + "|" +
-        driveFormat + "|" +
-        driveLabel + "|" +
-        driveName;
-
-    // SHA‑256
-    QByteArray hash = QCryptographicHash::hash(raw.toUtf8(), QCryptographicHash::Sha256);
-
+    // SHA‑256 pour uniformiser et éviter d’exposer l’ID brut
+    QByteArray hash = QCryptographicHash::hash(guid.toUtf8(), QCryptographicHash::Sha256);
     return hash.toHex().toUpper();
 }
+
+static void secureWipe(QByteArray& arr)
+{
+    if (!arr.isEmpty())
+        OPENSSL_cleanse(arr.data(), arr.size());
+}
+
+

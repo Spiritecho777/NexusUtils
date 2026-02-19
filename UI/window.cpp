@@ -57,8 +57,16 @@ void Window::addSiteItem(const SiteItem &site)
 	QPushButton* btnOpen = new QPushButton(site.name);
 	btnOpen->setFixedWidth(150);
 
+#ifdef __linux__
+	QPushButton* btnDelete = new QPushButton();
+	btnDelete->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
+
+	QPushButton* btnAddCreds = new QPushButton();
+	btnAddCreds->setIcon(style()->standardIcon(QStyle::SP_FileDialogDetailedView));
+#elif WIN32
 	QPushButton* btnAddCreds = new QPushButton("🔑");
 	QPushButton* btnDelete = new QPushButton("🗑️");
+#endif
 
 	h->addWidget(btnOpen);
 	h->addWidget(btnAddCreds);
@@ -82,7 +90,8 @@ void Window::onAddSite()
 
 void Window::onAbout()
 {
-	QMessageBox::about(this, "A propos", "Nexus Utils v1.0");
+	QString version = APP_VERSION;
+	QMessageBox::about(this, "A propos", "NexusUtils version:" APP_VERSION);
 }
 
 void Window::onOpenSite(SiteItem site)

@@ -65,8 +65,8 @@ fi
 echo "Distribution détectée : $DISTRO"
 
 # Liste des dépendances communes (exemple)
-DEPSU="dotnet-sdk-8.0 dotnet-runtime-8.0"
-DEPSA="dotnet-sdk-8.0 dotnet-runtime-8.0"
+DEPSU=""
+DEPSA=""
 DEPSAA=""
 DEPSF=DEPSA
 DEPSO=DEPSA

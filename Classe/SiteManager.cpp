@@ -2,6 +2,7 @@
 #include <QDir>
 #include <QFile>
 #include <QTextStream>
+#include <QMessageBox>
 
 #include "SiteItem.h"
 #include "SiteManager.h"
@@ -33,12 +34,11 @@ QVector<SiteItem> SiteManager::getAllSites() const
 {
 	QVector<SiteItem> sites;
 	QByteArray decrypted = loadDecrypted();
-	QTextStream stream(decrypted);
-
-	while (!stream.atEnd())
+	QString text = QString::fromUtf8(decrypted);
+	QStringList lines = text.split("\n", Qt::SkipEmptyParts);
+	for (const QString& line : lines)
 	{
-		QString line = stream.readLine();
-		QStringList parts = line.split("||");
+		QStringList parts = line.split("||", Qt::KeepEmptyParts);
 
 		if (parts.size() == 4)
 		{
@@ -63,8 +63,8 @@ void SiteManager::addSite(const QString& name, const QString& url)
 	if (!text.isEmpty() && !text.endsWith("\n"))
 		text += "\n";
 
-	text += name + "||" + url + "|| || ";
-
+	text += name + "||" + url + "||||";
+	qDebug() << "AFTER addSite, text =" << text;
 	SaveDecrypted(text.toUtf8());
 }
 
@@ -73,11 +73,11 @@ void SiteManager::addCredsSite(const QString& user, const QString& password, con
 	QByteArray decrypted = loadDecrypted();
 	QString text = QString::fromUtf8(decrypted);
 
-	QStringList lines = text.split("\n");
+	QStringList lines = text.split("\n", Qt::SkipEmptyParts);
 
 	for (int i = 0; i < lines.size(); ++i)
 	{
-		QStringList parts = lines[i].split("||");
+		QStringList parts = lines[i].split("||", Qt::KeepEmptyParts);
 		if (parts.size() == 4 && parts[0] == site.name)
 		{
 			parts[2] = user;
@@ -94,7 +94,7 @@ void SiteManager::deleteSite(const SiteItem& site)
 	QByteArray decrypted = loadDecrypted();
 	QString text = QString::fromUtf8(decrypted);
 
-	QStringList lines = text.split("\n");
+	QStringList lines = text.split("\n", Qt::SkipEmptyParts);
 	QString prefix = site.name + "||";
 
 	QStringList filtered;
@@ -123,13 +123,35 @@ void SiteManager::SaveDecrypted(const QByteArray& plain) const
 QByteArray SiteManager::loadDecrypted() const
 {
 	QFile file(filePathE);
-	if(!file.open(QIODevice::ReadOnly))
+	if (!file.open(QIODevice::ReadOnly))
 		return {};
 
 	QByteArray encrypted = file.readAll();
 	file.close();
 
 	CryptoUtils crypto;
-	return crypto.decryptBytes(encrypted);
+	QByteArray decrypted = crypto.decryptBytes(encrypted);
+
+	// Corruption de données
+	if (decrypted.isEmpty() && !encrypted.isEmpty())
+	{
+		QMessageBox::warning(nullptr,
+			"Données réinitialisées",
+			"Le fichier de données était corrompu.\n"
+			"Il a été supprimé et recréé automatiquement");
+
+		QFile::remove(filePathE);
+		// Créer un fichier vide ou avec un format minimal
+		QByteArray cleanData;
+		QByteArray reEncrypted = crypto.encryptBytes(cleanData);
+		QFile f(filePathE);
+		if (f.open(QIODevice::WriteOnly | QIODevice::Truncate))
+			f.write(reEncrypted);
+
+		return cleanData;
+	}
+
+	return decrypted;
 }
+
 #pragma endregion
