@@ -3,27 +3,18 @@
   "configurePresets": [
     {
       "name": "Debug-windows-x64",
-      "displayName": "Debug (x64)",
+      "displayName": "Debug Windows x64",
       "binaryDir": "${sourceDir}/out/build/debug",
+      "generator": "Ninja",
+      "architecture": {
+        "strategy": "external",
+        "value": "x64"
+      },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_TOOLCHAIN_FILE": "C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_TARGET_TRIPLET": "x64-windows-static",
         "OPENSSL_ROOT_DIR": "C:/dev/vcpkg/installed/x64-windows-static"
-      },
-      "inherits": [
-        "Qt-Default"
-      ]
-    },
-    {
-      "name": "Debug-linux-x64",
-      "displayName": "Debug (x64)",
-      "binaryDir": "${sourceDir}/out/build/debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "OPENSSL_ROOT_DIR": "/usr",
-        "OPENSSL_CRYPTO_LIBRARY": "/usr/lib/libcrypto.so",
-        "OPENSSL_SSL_LIBRARY": "/usr/lib/libssl.so"
       },
       "inherits": [
         "Qt-Default"
@@ -31,13 +22,34 @@
     },
     {
       "name": "Release-windows-x64",
-      "displayName": "Release (x64)",
+      "displayName": "Release Windows x64",
       "binaryDir": "${sourceDir}/out/build/release",
+      "generator": "Ninja",
+      "architecture": {
+        "strategy": "external",
+        "value": "x64"
+      },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_TOOLCHAIN_FILE": "C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_TARGET_TRIPLET": "x64-windows-static",
-        "OPENSSL_ROOT_DIR": "C:/dev/vcpkg/installed/x64-windows-static"
+        "OPENSSL_ROOT_DIR": "C:/dev/vcpkg/installed/x64-windows-static",
+        "CMAKE_PREFIX_PATH": "C:/Qt/6.10.2/Dynamic/msvc2022_64"
+      },
+      "inherits": [
+        "Qt-Default"
+      ]
+    },
+    {
+      "name": "Debug-linux-x64",
+      "displayName": "Debug Linux x64",
+      "binaryDir": "${sourceDir}/out/build/debug",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "OPENSSL_ROOT_DIR": "/usr",
+        "OPENSSL_CRYPTO_LIBRARY": "/usr/lib/libcrypto.so",
+        "OPENSSL_SSL_LIBRARY": "/usr/lib/libssl.so"
       },
       "inherits": [
         "Qt-Default"
@@ -74,7 +86,7 @@
   ],
   "vendor": {
     "qt-project.org/Presets": {
-      "checksum": "yxgCpNNH1eTccyXhTrfkNpHSPyw="
+      "checksum": "PLsCS0i8q1icnl7e82xUBlgtE7U="
     }
   }
 }
