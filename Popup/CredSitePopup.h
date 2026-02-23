@@ -3,6 +3,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QCheckBox>
+#include <QLabel>
 
 #include "../Classe/SiteItem.h"
 #include "../Classe/SiteManager.h"
@@ -26,4 +27,5 @@ private:
 	QLineEdit* editUser;
 	QLineEdit* editPassword;
 	QCheckBox* checkHook = nullptr;
+	QLabel* labelWrn = nullptr;
 };

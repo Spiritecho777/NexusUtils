@@ -7,7 +7,7 @@
 CredSitePopup::CredSitePopup(const SiteItem& site, QWidget* parent) : QDialog(parent), site(site)
 {
 	setWindowTitle("Ajouter des identifiants"); 
-	setFixedSize(260, 150); 
+	setFixedSize(300, 150); 
 	auto* layout = new QVBoxLayout(this); 
 
 	// Identifiant 
@@ -28,6 +28,11 @@ CredSitePopup::CredSitePopup(const SiteItem& site, QWidget* parent) : QDialog(pa
 	// Checbox Hook
 	checkHook = new QCheckBox("Activer le hook clavier", this);
 	layout->addWidget(checkHook);
+
+	labelWrn = new QLabel("Attention : Ceci est non compatible avec Wayland", this);
+	labelWrn->setStyleSheet("color: red;");
+	labelWrn->setVisible(false);
+	layout->addWidget(labelWrn);
 	
 	// Boutons 
 	auto *buttons = new QHBoxLayout(); 
@@ -36,6 +41,7 @@ CredSitePopup::CredSitePopup(const SiteItem& site, QWidget* parent) : QDialog(pa
 
 	connect(btnCancel, &QPushButton::clicked, this, &CredSitePopup::onCancel); 
 	connect(btnAdd, &QPushButton::clicked, this, &CredSitePopup::onAdd); 
+	connect(checkHook, &QCheckBox::toggled, this, [this](bool checked) { labelWrn->setVisible(checked); });
 
 	buttons->addWidget(btnAdd); 
 	buttons->addStretch(); 
@@ -46,6 +52,7 @@ CredSitePopup::CredSitePopup(const SiteItem& site, QWidget* parent) : QDialog(pa
 	editUser->setText(site.username);
 	editPassword->setText(site.password);
 	checkHook->setChecked(site.isHooked);
+	labelWrn->setVisible(site.isHooked);
 }
 
 void CredSitePopup::onAdd() {
