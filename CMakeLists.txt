@@ -97,3 +97,10 @@ target_link_libraries(${PROJECT_NAME}
         OpenSSL::SSL
         OpenSSL::Crypto
 )
+
+# -------------------------
+# Link Linux
+# -------------------------
+if (UNIX AND NOT APPLE)
+    target_link_libraries(${PROJECT_NAME} PRIVATE X11 Xtst)
+endif()

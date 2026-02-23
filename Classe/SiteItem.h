@@ -8,4 +8,6 @@ struct SiteItem
 
 	QString username;
 	QString password;
+
+	bool isHooked = false;
 };

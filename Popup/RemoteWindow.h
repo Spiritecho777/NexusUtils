@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QWidget>
-//#include <QWebEngineView>
+#include <QWebEngineView>
 
 class RemoteWindow : public QWidget
 {

@@ -65,11 +65,11 @@ fi
 echo "Distribution détectée : $DISTRO"
 
 # Liste des dépendances communes (exemple)
-DEPSU=""
-DEPSA=""
+DEPSU="libxtst6 libxtst-dev x11proto-record-dev"
+DEPSA="libxtst xorg-recordproto"
 DEPSAA=""
-DEPSF=DEPSA
-DEPSO=DEPSA
+DEPSF="libXtst libXtst-devel xorg-x11-proto-devel"
+DEPSO="libXtst6 libXtst-devel xorg-x11-devel"
 
 # Installation selon la distribution
 case "$DISTRO" in

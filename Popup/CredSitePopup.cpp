@@ -24,6 +24,10 @@ CredSitePopup::CredSitePopup(const SiteItem& site, QWidget* parent) : QDialog(pa
 	editPassword->setEchoMode(QLineEdit::Password); 
 	rowPwd->addWidget(editPassword); 
 	layout->addLayout(rowPwd); 
+
+	// Checbox Hook
+	checkHook = new QCheckBox("Activer le hook clavier", this);
+	layout->addWidget(checkHook);
 	
 	// Boutons 
 	auto *buttons = new QHBoxLayout(); 
@@ -41,16 +45,18 @@ CredSitePopup::CredSitePopup(const SiteItem& site, QWidget* parent) : QDialog(pa
 
 	editUser->setText(site.username);
 	editPassword->setText(site.password);
+	checkHook->setChecked(site.isHooked);
 }
 
 void CredSitePopup::onAdd() {
 	QString identifiant = editUser->text();
 	QString password = editPassword->text();
+	bool eHook = checkHook->isChecked();
 
 	site.username = identifiant;
 	site.password = password;
 
-	siteManager.addCredsSite(identifiant,password,site);
+	siteManager.addCredsSite(identifiant,password,eHook,site);
 
 	accept();
 }

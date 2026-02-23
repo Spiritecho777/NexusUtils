@@ -12,7 +12,7 @@ public:
 
 	void deleteSite(const SiteItem& site);
 	void addSite(const QString& name, const QString& url);
-	void addCredsSite(const QString& user, const QString& password, const SiteItem& site);
+	void addCredsSite(const QString& user, const QString& password, const bool& eHook, const SiteItem& site);
 
 private:
 	QString appDirectory;

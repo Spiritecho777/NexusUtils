@@ -40,13 +40,14 @@ QVector<SiteItem> SiteManager::getAllSites() const
 	{
 		QStringList parts = line.split("||", Qt::KeepEmptyParts);
 
-		if (parts.size() == 4)
+		if (parts.size() == 5)
 		{
 			SiteItem s;
 			s.name = parts[0];
 			s.url = parts[1];
 			s.username = parts[2];
 			s.password = parts[3];
+			s.isHooked = (parts[4] == "1");
 			sites.append(s);
 		}
 	}
@@ -63,12 +64,12 @@ void SiteManager::addSite(const QString& name, const QString& url)
 	if (!text.isEmpty() && !text.endsWith("\n"))
 		text += "\n";
 
-	text += name + "||" + url + "||||";
+	text += name + "||" + url + "||||||";
 	qDebug() << "AFTER addSite, text =" << text;
 	SaveDecrypted(text.toUtf8());
 }
 
-void SiteManager::addCredsSite(const QString& user, const QString& password, const SiteItem& site)
+void SiteManager::addCredsSite(const QString& user, const QString& password, const bool& eHook, const SiteItem& site)
 {
 	QByteArray decrypted = loadDecrypted();
 	QString text = QString::fromUtf8(decrypted);
@@ -78,10 +79,11 @@ void SiteManager::addCredsSite(const QString& user, const QString& password, con
 	for (int i = 0; i < lines.size(); ++i)
 	{
 		QStringList parts = lines[i].split("||", Qt::KeepEmptyParts);
-		if (parts.size() == 4 && parts[0] == site.name)
+		if (parts.size() == 5 && parts[0] == site.name)
 		{
 			parts[2] = user;
 			parts[3] = password;
+			parts[4] = eHook ? "1" : "0";
 			lines[i] = parts.join("||");
 		}
 	}
