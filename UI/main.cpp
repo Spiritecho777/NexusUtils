@@ -7,7 +7,7 @@
 #include <QIcon>
 
 //Fichiers local (du projet)
-#include "window.h"
+#include "NexusWindow.h"
 
 int main(int argc, char* argv[])
 {
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	Window w;
+	NexusWindow w;
 	w.show();
 
 	return a.exec();

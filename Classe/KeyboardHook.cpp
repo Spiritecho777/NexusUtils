@@ -58,7 +58,7 @@ std::vector<QPointer<RemoteWindow>> KeyboardHook::s_windows;
 		int vkCode = kbd->vkCode;
 
 		RemoteWindow* focusedWindow = getFocusedWindow();
-		if (focusedWindow) {
+		if (focusedWindow && focusedWindow->isHooked()) {
 			bool handled = false;
 
 			if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
@@ -235,7 +235,7 @@ std::vector<QPointer<RemoteWindow>> KeyboardHook::s_windows;
 		int keycode = raw[1];
 
 		RemoteWindow* focusedWindow = getFocusedWindow();
-		if (focusedWindow)
+		if (focusedWindow && focusedWindow->isHooked())
 		{
 			bool handled = false;
 

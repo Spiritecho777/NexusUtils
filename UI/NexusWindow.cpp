@@ -4,12 +4,13 @@
 #include <QMessageBox>
 #include <QWidget>
 
-#include "window.h"
+#include "NexusWindow.h"
 #include "../Classe/SiteItem.h"
 #include "../Popup/AddSitePopup.h"
 #include "../Popup/CredSitePopup.h"
+#include "../Popup/RemoteWindow.h"
 
-Window::Window(QWidget* parent) : QWidget(parent)
+NexusWindow::NexusWindow(QWidget* parent) : QWidget(parent)
 {
 	this->setWindowTitle("Nexus Utils");
 	this->resize(450, 265);
@@ -20,8 +21,8 @@ Window::Window(QWidget* parent) : QWidget(parent)
 	QPushButton* btnAdd = new QPushButton("Ajouter un site", this);
 	QPushButton* btnAbout = new QPushButton("?", this);
 
-	connect(btnAdd, &QPushButton::clicked, this, &Window::onAddSite);
-	connect(btnAbout, &QPushButton::clicked, this, &Window::onAbout);
+	connect(btnAdd, &QPushButton::clicked, this, &NexusWindow::onAddSite);
+	connect(btnAbout, &QPushButton::clicked, this, &NexusWindow::onAbout);
 
 	topBar->addWidget(btnAdd);
 	topBar->addStretch();
@@ -36,7 +37,7 @@ Window::Window(QWidget* parent) : QWidget(parent)
 	updateSiteList();
 }
 
-void Window::updateSiteList()
+void NexusWindow::updateSiteList()
 {
 	listSite->clear();
 	if (!siteManager.fileExists())
@@ -46,7 +47,7 @@ void Window::updateSiteList()
 		addSiteItem(site);
 }
 
-void Window::addSiteItem(const SiteItem &site)
+void NexusWindow::addSiteItem(const SiteItem &site)
 {
 	QListWidgetItem* item = new QListWidgetItem(listSite);
 
@@ -81,32 +82,33 @@ void Window::addSiteItem(const SiteItem &site)
 
 }
 
-void Window::onAddSite()
+void NexusWindow::onAddSite()
 {
 	AddSitePopup dlg(this);
 	if (dlg.exec() == QDialog::Accepted)
 		updateSiteList();	
 }
 
-void Window::onAbout()
+void NexusWindow::onAbout()
 {
 	QString version = APP_VERSION;
 	QMessageBox::about(this, "A propos", "NexusUtils version:" APP_VERSION);
 }
 
-void Window::onOpenSite(SiteItem site)
+void NexusWindow::onOpenSite(SiteItem site)
 {
-	
+	auto* win = new RemoteWindow(site);
+	win->show();
 }
 
-void Window::onAddCreds(SiteItem site)
+void NexusWindow::onAddCreds(SiteItem site)
 {
 	CredSitePopup dlg(site, this);
 	dlg.exec();
 	updateSiteList();
 }
 
-void Window::onDeleteSite(SiteItem site)
+void NexusWindow::onDeleteSite(SiteItem site)
 {
 	siteManager.deleteSite(site);
 	updateSiteList();
