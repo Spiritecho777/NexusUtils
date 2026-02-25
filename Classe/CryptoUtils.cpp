@@ -14,8 +14,16 @@ static void secureWipe(QByteArray& arr);
 
 CryptoUtils::CryptoUtils()
 {
-    QString guid = computeMachineGuid(); 
-    password = guid.toUtf8();
+    QByteArray master = loadMasterKey();
+    if (!master.isEmpty()) {
+        password = master;
+        return;
+    }
+    else 
+    {
+        QString guid = computeMachineGuid();
+        password = guid.toUtf8();
+    }
 }
 
 QByteArray CryptoUtils::deriveKey(const QByteArray& password, const QByteArray& salt) const
@@ -109,7 +117,6 @@ QByteArray CryptoUtils::encryptBytes(const QByteArray& plain) const
     return encrypted;
 }
 
-
 QByteArray CryptoUtils::decryptBytes(const QByteArray& encrypted) const
 {
     if (encrypted.size() < 16)
@@ -169,7 +176,6 @@ QByteArray CryptoUtils::decryptBytes(const QByteArray& encrypted) const
     return decrypted;
 }
 
-
 static QString computeMachineGuid()
 {
     QString guid;
@@ -203,4 +209,23 @@ static void secureWipe(QByteArray& arr)
         OPENSSL_cleanse(arr.data(), arr.size());
 }
 
+QByteArray CryptoUtils::loadMasterKey()
+{
+	QSettings s("NexusUtils", "Security");
+
+	QByteArray hash = s.value("masterHash").toByteArray();
+	QByteArray salt = s.value("masterSalt").toByteArray();
+
+    if (hash.isEmpty() || salt.isEmpty())
+		return {};
+
+	return hash + salt;
+}
+
+void CryptoUtils::saveMasterKey(const QByteArray& hash, const QByteArray& salt)
+{
+    QSettings s("NexusUtils", "Security");
+    s.setValue("masterHash", hash);
+    s.setValue("masterSalt", salt);
+}
 

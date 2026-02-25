@@ -3,12 +3,17 @@
 #include <QHBoxLayout>
 #include <QMessageBox>
 #include <QWidget>
+#include <openssl/rand.h>
+#include <openssl/evp.h>
 
 #include "NexusWindow.h"
 #include "../Classe/SiteItem.h"
 #include "../Popup/AddSitePopup.h"
 #include "../Popup/CredSitePopup.h"
 #include "../Popup/RemoteWindow.h"
+#include "../Popup/MasterPasswordPopup.h"
+#include "../Classe/CryptoUtils.h"
+
 
 NexusWindow::NexusWindow(QWidget* parent) : QWidget(parent)
 {
@@ -19,13 +24,16 @@ NexusWindow::NexusWindow(QWidget* parent) : QWidget(parent)
 
 	auto* topBar = new QHBoxLayout();
 	QPushButton* btnAdd = new QPushButton("Ajouter un site", this);
+	QPushButton* btnMasterPassword = new QPushButton("🔒", this);
 	QPushButton* btnAbout = new QPushButton("?", this);
 
 	connect(btnAdd, &QPushButton::clicked, this, &NexusWindow::onAddSite);
+	connect(btnMasterPassword, &QPushButton::clicked, this, &NexusWindow::onMasterPassword);
 	connect(btnAbout, &QPushButton::clicked, this, &NexusWindow::onAbout);
 
 	topBar->addWidget(btnAdd);
 	topBar->addStretch();
+	topBar->addWidget(btnMasterPassword);
 	topBar->addWidget(btnAbout);
 
 	layout->addLayout(topBar);
@@ -88,6 +96,46 @@ void NexusWindow::onAddSite()
 	if (dlg.exec() == QDialog::Accepted)
 		updateSiteList();	
 }
+
+void NexusWindow::onMasterPassword()
+{
+	QByteArray stored = CryptoUtils::loadMasterKey();
+
+	MasterPasswordPopup dlg(this);
+
+	if (dlg.exec() != QDialog::Accepted)
+		return;
+
+	QString pwd = dlg.password();
+
+	// Désactivation → retour GUID
+	if (pwd.isEmpty())
+	{
+		CryptoUtils::saveMasterKey({}, {});
+		QMessageBox::information(this, "Info", "Mot de passe maître désactivé.");
+		return;
+	}
+
+	// Activation / changement
+	QByteArray salt(16, 0);
+	RAND_bytes(reinterpret_cast<unsigned char*>(salt.data()), salt.size());
+
+	QByteArray hash(32, 0);
+
+	PKCS5_PBKDF2_HMAC(
+		pwd.toUtf8().constData(), pwd.size(),
+		reinterpret_cast<const unsigned char*>(salt.data()), salt.size(),
+		100000,
+		EVP_sha256(),
+		32,
+		reinterpret_cast<unsigned char*>(hash.data())
+	);
+
+	CryptoUtils::saveMasterKey(hash, salt);
+
+	QMessageBox::information(this, "Info", "Mot de passe maître enregistré.");
+}
+
 
 void NexusWindow::onAbout()
 {

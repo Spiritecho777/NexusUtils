@@ -10,6 +10,9 @@ public:
 	QByteArray encryptBytes(const QByteArray& data) const;
 	QByteArray decryptBytes(const QByteArray& encrypt) const;
 
+	static QByteArray loadMasterKey();
+	static void saveMasterKey(const QByteArray& hash, const QByteArray& salt);
+
 private:
 	QByteArray deriveKey(const QByteArray& password, const QByteArray& salt) const;
 

@@ -19,6 +19,7 @@ private slots:
 	void onOpenSite(SiteItem site);
 	void onAddCreds(SiteItem site);
 	void onDeleteSite(SiteItem site);
+	void onMasterPassword();
 
 private :
 	QListWidget* listSite;
