@@ -3,33 +3,33 @@
 #include <QPointer>
 
 #ifdef _WIN32
-	#include <windows.h>
+#include <windows.h>
 #endif
 
 #if defined(__linux__)
-	#include <X11/Xlib.h>
-	#include <X11/extensions/record.h>
+#include <X11/Xlib.h>
+#include <X11/extensions/record.h>
 
-	#undef Status
-	#undef Bool
-	#undef None
-	#undef True
-	#undef False
-	#undef Complex
-	#undef FocusIn
-	#undef FocusOut
-	#undef Expose
-	#undef DestroyNotify
-	#undef CursorShape
-	#undef Unsorted
-	#undef Below
-	#undef Above
-	#undef Success
+#undef Status
+#undef Bool
+#undef None
+#undef True
+#undef False
+#undef Complex
+#undef FocusIn
+#undef FocusOut
+#undef Expose
+#undef DestroyNotify
+#undef CursorShape
+#undef Unsorted
+#undef Below
+#undef Above
+#undef Success
 #endif
 
 class RemoteWindow;
 
-class KeyboardHook 
+class KeyboardHook
 {
 public:
 	static void startHook(RemoteWindow* window);
@@ -46,7 +46,7 @@ private:
 #endif
 
 #if defined(__linux__)
-	static Display* s_display; 
+	static Display* s_display;
 	static XRecordContext s_context;
 	static bool s_running;
 

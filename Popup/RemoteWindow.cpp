@@ -5,10 +5,15 @@
 
 #include <QWebEngineView>
 #include <QVBoxLayout>
+#include <QDebug>
 
-RemoteWindow::RemoteWindow(const SiteItem& site)	: QWidget(nullptr)
+RemoteWindow::RemoteWindow(const SiteItem& site) : QWidget(nullptr), m_site(site)
 {
 	setAttribute(Qt::WA_DeleteOnClose);
+
+	setAttribute(Qt::WA_TranslucentBackground);
+	setStyleSheet("background: transparent;");
+
 	setWindowTitle(site.name);
 	resize(1200, 720);
 
@@ -16,17 +21,34 @@ RemoteWindow::RemoteWindow(const SiteItem& site)	: QWidget(nullptr)
 	auto* page = new CustomWebPage(m_view);
 	m_view->setPage(page);
 
+	m_view->setStyleSheet("background: white;");
+
 	if (!site.url.isEmpty())
 		m_view->setUrl(QUrl(site.url));
 
+	connect(m_view, &QWebEngineView::titleChanged, this, [this](const QString& title) {
+		if (!title.trimmed().isEmpty()) 
+			this->setWindowTitle(title);
+		});
+
 	auto* layout = new QVBoxLayout(this);
+	layout->setContentsMargins(0, 0, 0, 0);
 	layout->addWidget(m_view);
 	setLayout(layout);
 
-	m_isHooked = site.isHooked;
+	//m_isHooked = site.isHooked;
+	m_isHooked = true; // forcer le hook pour tous les sites
+    qDebug() << "etat HOOKED = " << m_isHooked;
 	if(m_isHooked) {
 		KeyboardHook::startHook(this);
 	}
+
+	connect(page, &CustomWebPage::windowCloseRequested, this, &RemoteWindow::close);
+
+	connect(m_view, &QWebEngineView::loadFinished, this, [this](bool ok) {
+			if (!ok) return;
+			injectCredentials();
+		});
 }
 
 RemoteWindow::~RemoteWindow() 
@@ -37,16 +59,44 @@ RemoteWindow::~RemoteWindow()
 }
 
 
-bool RemoteWindow::keyboardHookKeyDown(int vkCode, int msg) 
+bool RemoteWindow::keyboardHookKeyDown(int vkCode, int msg)
 {
-	// Handle key down events here
-	// Return true if the event is handled and should not be passed to other applications
+    //qDebug() << "KeyDown vkCode =" << vkCode; // fait crasher linux
+
+    return false;
+}
+
+
+bool RemoteWindow::keyboardHookKeyUp(int vkCode)
+{
 	return false;
 }
 
-bool RemoteWindow::keyboardHookKeyUp(int vkCode) 
+
+void RemoteWindow::injectCredentials()
 {
-	// Handle key up events here
-	// Return true if the event is handled and should not be passed to other applications
-	return false;
+	if (m_site.username.isEmpty() && m_site.password.isEmpty())
+		return;
+
+	QString login = m_site.username;
+	QString password = m_site.password;
+
+	login.replace("'", "\\'");
+	password.replace("'", "\\'");
+
+	QString script = QString(R"(
+        (function() {
+            var loginInput = document.querySelector('input[name=usermail], input[id=username]');
+            if (loginInput) {
+                loginInput.value = '%1';
+            }
+
+            var passwordInput = document.querySelector('input[type=password], input[name=password], input[id=password]');
+            if (passwordInput) {
+                passwordInput.value = '%2';
+            }
+        })();
+    )").arg(login, password);
+
+	m_view->page()->runJavaScript(script);
 }

@@ -65,7 +65,6 @@ void SiteManager::addSite(const QString& name, const QString& url)
 		text += "\n";
 
 	text += name + "||" + url + "||||||";
-	qDebug() << "AFTER addSite, text =" << text;
 	SaveDecrypted(text.toUtf8());
 }
 
@@ -87,7 +86,6 @@ void SiteManager::addCredsSite(const QString& user, const QString& password, con
 			lines[i] = parts.join("||");
 		}
 	}
-
 	SaveDecrypted(lines.join("\n").toUtf8());
 }
 

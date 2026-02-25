@@ -4,6 +4,7 @@
 
 #include "../Classe/SiteItem.h"
 #include "../Classe/SiteManager.h"
+#include "BrowserWindow.h"
 
 class NexusWindow : public QWidget
 {
@@ -22,6 +23,7 @@ private slots:
 private :
 	QListWidget* listSite;
 	SiteManager siteManager;
+	BrowserWindow* browser = nullptr;
 
 	void updateSiteList();
 	void addSiteItem(const SiteItem &site);

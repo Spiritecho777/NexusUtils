@@ -97,8 +97,17 @@ void NexusWindow::onAbout()
 
 void NexusWindow::onOpenSite(SiteItem site)
 {
-	auto* win = new RemoteWindow(site);
-	win->show();
+	if (!browser)
+	{
+		browser = new BrowserWindow;
+		browser->show();
+
+		connect(browser, &BrowserWindow::destroyed, this, [this]() {
+			browser = nullptr;
+		});
+	}
+
+	browser->openSite(site);
 }
 
 void NexusWindow::onAddCreds(SiteItem site)
