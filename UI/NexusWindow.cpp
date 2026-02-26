@@ -24,7 +24,12 @@ NexusWindow::NexusWindow(QWidget* parent) : QWidget(parent)
 
 	auto* topBar = new QHBoxLayout();
 	QPushButton* btnAdd = new QPushButton("Ajouter un site", this);
+#ifdef __linux__
+	QPushButton* btnMasterPassword = new QPushButton();
+	btnMasterPassword->setIcon(style()->standardIcon(QStyle::SP_FileDialogDetailedView));
+#elif WIN32
 	QPushButton* btnMasterPassword = new QPushButton("🔒", this);
+#endif
 	QPushButton* btnAbout = new QPushButton("?", this);
 
 	connect(btnAdd, &QPushButton::clicked, this, &NexusWindow::onAddSite);
@@ -135,7 +140,6 @@ void NexusWindow::onMasterPassword()
 
 	QMessageBox::information(this, "Info", "Mot de passe maître enregistré.");
 }
-
 
 void NexusWindow::onAbout()
 {
