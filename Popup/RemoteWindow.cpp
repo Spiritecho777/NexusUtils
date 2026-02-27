@@ -6,6 +6,15 @@
 #include <QWebEngineView>
 #include <QVBoxLayout>
 #include <QDebug>
+#include <QEvent>
+#include <QKeyEvent>
+#include <QApplication>
+#include <QTimer>"
+
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 
 RemoteWindow::RemoteWindow(const SiteItem& site) : QWidget(nullptr), m_site(site)
 {
@@ -46,9 +55,9 @@ RemoteWindow::RemoteWindow(const SiteItem& site) : QWidget(nullptr), m_site(site
 	connect(page, &CustomWebPage::windowCloseRequested, this, &RemoteWindow::close);
 
 	connect(m_view, &QWebEngineView::loadFinished, this, [this](bool ok) {
-			if (!ok) return;
-			injectCredentials();
-		});
+		if (!ok) return;
+		injectCredentials();
+	});
 }
 
 RemoteWindow::~RemoteWindow() 
@@ -61,17 +70,54 @@ RemoteWindow::~RemoteWindow()
 
 bool RemoteWindow::keyboardHookKeyDown(int vkCode, int msg)
 {
-    //qDebug() << "KeyDown vkCode =" << vkCode; // fait crasher linux
+	if (vkCode == VK_LWIN || vkCode == VK_RWIN)
+	{
+		// 1. Forcer le focus sur le canvas via JS
+		m_view->page()->runJavaScript(R"(
+            var canvas = document.querySelector('canvas');
+            if (canvas) canvas.focus();
+        )");
 
-    return false;
+		// 2. S'assurer que la vue a le focus
+		m_view->setFocus();
+		QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
+		target->setFocus();
+
+		// 3. Injecter le vrai VK code natif
+		QKeyEvent event(
+			QEvent::KeyPress,
+			Qt::Key_Meta,
+			Qt::MetaModifier,
+			0,
+			vkCode,  // VK_LWIN = 0x5B
+			0
+		);
+		QApplication::sendEvent(target, &event);
+		return true;
+	}
+	return false;
 }
 
 
 bool RemoteWindow::keyboardHookKeyUp(int vkCode)
-{
+{	
+	if (vkCode == VK_LWIN || vkCode == VK_RWIN)
+	{
+		QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
+
+		QKeyEvent event(
+			QEvent::KeyRelease,
+			Qt::Key_Meta,
+			Qt::MetaModifier,
+			0,
+			vkCode,
+			0
+		);
+		QApplication::sendEvent(target, &event);
+		return true;
+	}
 	return false;
 }
-
 
 void RemoteWindow::injectCredentials()
 {

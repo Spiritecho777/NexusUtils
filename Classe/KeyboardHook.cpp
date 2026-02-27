@@ -55,6 +55,9 @@ LRESULT CALLBACK KeyboardHook::LowLevelKeyboardProc(int nCode, WPARAM wParam, LP
 	auto* kbd = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
 	if (!kbd) return CallNextHookEx(s_hook, nCode, wParam, lParam);
 
+	if (kbd->flags & LLKHF_INJECTED)
+		return CallNextHookEx(s_hook, nCode, wParam, lParam);
+
 	int vkCode = kbd->vkCode;
 
 	RemoteWindow* focusedWindow = getFocusedWindow();

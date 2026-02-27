@@ -23,8 +23,12 @@ public:
 
 private:
     QWebEngineView* m_view = nullptr;
-    bool m_isHooked;
-	QList<int> m_pressedKeys;
+    QList<int> m_pressedKeys;
+
     SiteItem m_site;
+
+    bool m_isHooked;
+    bool m_winPressed = false;
+
 	void injectCredentials();
 };
