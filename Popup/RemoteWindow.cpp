@@ -9,12 +9,11 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QApplication>
-#include <QTimer>"
+#include <QTimer>
 
 #ifdef WIN32
 #include <windows.h>
 #endif
-
 
 RemoteWindow::RemoteWindow(const SiteItem& site) : QWidget(nullptr), m_site(site)
 {
@@ -57,6 +56,36 @@ RemoteWindow::RemoteWindow(const SiteItem& site) : QWidget(nullptr), m_site(site
 	connect(m_view, &QWebEngineView::loadFinished, this, [this](bool ok) {
 		if (!ok) return;
 		injectCredentials();
+
+        //PATCH pour les touches
+        m_view->page()->runJavaScript(R"(
+        (function() {
+            window.addEventListener('keydown', function(e) {
+                if (!e.ctrlKey || !e.altKey) return;
+                var remap = {
+                    'û': { key: ']', keyCode: 219, code: 'Minus'        },
+                    '»': { key: '}', keyCode: 187, code: 'Equal'        },
+                    'º': { key: '¤', keyCode: 186, code: 'BracketRight' }
+                };
+                var mapped = remap[e.key];
+                if (mapped) {
+                    e.stopImmediatePropagation();
+                    e.target.dispatchEvent(new KeyboardEvent('keydown', {
+                        key:      mapped.key,
+                        code:     mapped.code,
+                        keyCode:  mapped.keyCode,
+                        which:    mapped.keyCode,
+                        ctrlKey:  true,
+                        altKey:   true,
+                        bubbles:  true,
+                        cancelable: true
+                    }));
+                }
+            }, true);
+        })();
+        )");
+		//PATCH
+
 	});
 }
 
@@ -70,53 +99,117 @@ RemoteWindow::~RemoteWindow()
 
 bool RemoteWindow::keyboardHookKeyDown(int vkCode, int msg)
 {
-	if (vkCode == VK_LWIN || vkCode == VK_RWIN)
-	{
-		// 1. Forcer le focus sur le canvas via JS
-		m_view->page()->runJavaScript(R"(
+    if (!m_pressedKeys.contains(vkCode))
+        m_pressedKeys.append(vkCode);
+
+    bool isAltGr = m_pressedKeys.contains(0xA5);
+    bool isAlt = !isAltGr && (m_pressedKeys.contains(0xA4) || m_pressedKeys.contains(0x12));
+
+    if (vkCode == 0x12 || vkCode == 0xA4 || vkCode == 0xA5)
+        return true;
+
+    if (vkCode == VK_LWIN || vkCode == VK_RWIN)
+    {
+        m_view->page()->runJavaScript(R"(
+            var canvas = document.querySelector('canvas');
+            if (canvas) canvas.focus();
+        )");
+        m_view->setFocus();
+        QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
+        target->setFocus();
+        QKeyEvent event(QEvent::KeyPress, Qt::Key_Meta, Qt::MetaModifier, 0, vkCode, 0);
+        QApplication::sendEvent(target, &event);
+        return true;
+    }
+
+    if (isAltGr)
+    {
+        //DEBUG
+        m_view->page()->runJavaScript(R"(
+            if (!window._altgrDebug) {
+                window._altgrDebug = true;
+                window.addEventListener('keydown', function(e) {
+                    console.log('[JS keydown] key=' + e.key + ' code=' + e.code + ' keyCode=' + e.keyCode + ' ctrlKey=' + e.ctrlKey + ' altKey=' + e.altKey);
+                }, true);
+            }
+        )");
+        //DEBUG
+
+        m_view->page()->runJavaScript(R"(
+            var canvas = document.querySelector('canvas');
+            if (canvas) canvas.focus();
+        )");
+        m_view->setFocus();
+        QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
+        target->setFocus();
+
+        QKeyEvent altGrPress(QEvent::KeyPress, Qt::Key_AltGr, Qt::AltModifier | Qt::ControlModifier, 0, 0xA5, 0, QString());
+        QApplication::sendEvent(target, &altGrPress);
+
+        QKeyEvent press(QEvent::KeyPress, Qt::Key(vkCode), Qt::AltModifier | Qt::ControlModifier, 0, vkCode, 0, QString());
+        QApplication::sendEvent(target, &press);
+
+		m_altGrKeys.insert(vkCode);
+        return true;
+    }
+
+    if (isAlt)
+    {
+        m_view->page()->runJavaScript(R"(
             var canvas = document.querySelector('canvas');
             if (canvas) canvas.focus();
         )");
 
-		// 2. S'assurer que la vue a le focus
-		m_view->setFocus();
-		QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
-		target->setFocus();
+        m_view->setFocus();
+        QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
+        target->setFocus();
 
-		// 3. Injecter le vrai VK code natif
-		QKeyEvent event(
-			QEvent::KeyPress,
-			Qt::Key_Meta,
-			Qt::MetaModifier,
-			0,
-			vkCode,  // VK_LWIN = 0x5B
-			0
-		);
-		QApplication::sendEvent(target, &event);
-		return true;
-	}
-	return false;
+        QKeyEvent altPress(QEvent::KeyPress, Qt::Key_Alt, Qt::AltModifier, 0, 0xA4, 0, QString());
+        QApplication::sendEvent(target, &altPress);
+
+        QKeyEvent Press(QEvent::KeyPress, Qt::Key_Tab, Qt::AltModifier, 0, vkCode, 0, QString());
+        QApplication::sendEvent(target, &Press);
+            
+        return true;
+    }
+    
+    return false;
 }
 
-
 bool RemoteWindow::keyboardHookKeyUp(int vkCode)
-{	
-	if (vkCode == VK_LWIN || vkCode == VK_RWIN)
-	{
-		QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
+{
+    m_pressedKeys.removeAll(vkCode);
 
-		QKeyEvent event(
-			QEvent::KeyRelease,
-			Qt::Key_Meta,
-			Qt::MetaModifier,
-			0,
-			vkCode,
-			0
-		);
-		QApplication::sendEvent(target, &event);
-		return true;
-	}
-	return false;
+    QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
+
+    if (vkCode == VK_LWIN || vkCode == VK_RWIN)
+    {
+        QKeyEvent event(QEvent::KeyRelease, Qt::Key_Meta, Qt::MetaModifier, 0, vkCode, 0);
+        QApplication::sendEvent(target, &event);
+        return true;
+    }
+
+    if (vkCode == 0x12 || vkCode == 0xA4)
+    {
+        QKeyEvent event(QEvent::KeyRelease, Qt::Key_Alt, Qt::AltModifier, 0, vkCode, 0);
+        QApplication::sendEvent(target, &event);
+        return true;
+    }
+
+    if (m_altGrKeys.contains(vkCode))
+    {
+        m_altGrKeys.remove(vkCode);
+
+        QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
+        QKeyEvent release(QEvent::KeyRelease, Qt::Key(vkCode), Qt::AltModifier | Qt::ControlModifier, 0, vkCode, 0, QString());
+        QApplication::sendEvent(target, &release);
+
+        QKeyEvent altGrRelease(QEvent::KeyRelease, Qt::Key_AltGr, Qt::NoModifier, 0, 0xA5, 0, QString());
+        QApplication::sendEvent(target, &altGrRelease);
+        return true;
+    }
+
+    return false;
 }
 
 void RemoteWindow::injectCredentials()

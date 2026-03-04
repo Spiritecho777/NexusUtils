@@ -16,6 +16,10 @@
 
 int main(int argc, char* argv[])
 {
+    //DEBUG
+    qputenv("QTWEBENGINE_REMOTE_DEBUGGING", "9222");
+    //DEBUG
+
     QApplication a(argc, argv);
 
     a.setWindowIcon(QIcon("/icons/app_icon.png"));

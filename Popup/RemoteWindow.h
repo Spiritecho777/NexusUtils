@@ -24,6 +24,7 @@ public:
 private:
     QWebEngineView* m_view = nullptr;
     QList<int> m_pressedKeys;
+	QSet<int> m_altGrKeys;
 
     SiteItem m_site;
 
