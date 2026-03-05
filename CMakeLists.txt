@@ -19,11 +19,18 @@ add_definitions(-DAPP_VERSION="${APP_VERSION}")
 # Génération du fichier RC 
 # ------------------------- 
 if (WIN32) 
+    string(REPLACE "\\" "/" CMAKE_SOURCE_DIR_FIXED "${CMAKE_SOURCE_DIR}")
     configure_file( 
         ${CMAKE_SOURCE_DIR}/app.rc.in 
         ${CMAKE_BINARY_DIR}/app.rc 
         @ONLY 
     ) 
+    # Copie l'icône dans le build dir pour que le .rc la trouve
+    configure_file(
+        ${CMAKE_SOURCE_DIR}/Asset/Icone.ico
+        ${CMAKE_BINARY_DIR}/Asset/Icone.ico
+        COPYONLY
+    )
 endif()
 
 # -------------------------
@@ -70,22 +77,38 @@ qt_add_executable(${PROJECT_NAME}
 # -------------------------
 # Ressources Qt
 # -------------------------
-qt_add_resources(${PROJECT_NAME} "resources"
-    PREFIX "/"
-    FILES
-        Asset/Icone.png
-)
+if(WIN32)
+    qt_add_resources(${PROJECT_NAME} "resources"
+        PREFIX "/"
+        FILES
+            Asset/Icone.png
+    )
+endif()
 
 # -------------------------
 # Ressources Windows (.rc)
 # -------------------------
 if (WIN32)
+    # Force le compilateur de ressources
+    set_source_files_properties(${CMAKE_BINARY_DIR}/app.rc
+        PROPERTIES
+            LANGUAGE RC
+    )
     target_sources(${PROJECT_NAME} PRIVATE app.rc)
     set_target_properties(${PROJECT_NAME}
         PROPERTIES
             WIN32_EXECUTABLE TRUE
     )
 endif()
+
+# -------------------------
+# Copie Asset
+# -------------------------
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/Asset
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/Asset
+)
 
 # -------------------------
 # Link

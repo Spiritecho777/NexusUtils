@@ -20,6 +20,13 @@ int main(int argc, char* argv[])
     qputenv("QTWEBENGINE_REMOTE_DEBUGGING", "9222");
     //DEBUG
 
+    qputenv("QTWEBENGINE_CHROMIUM_FLAGS",
+        "--disable-features=IsolateOrigins,site-per-process,ClipboardUserActivation,RendererCodeIntegrity "
+        "--enable-features=ClipboardContentSetting,ClipboardReading,ClipboardWrite "
+        "--enable-experimental-web-platform-features "
+        "--enabble-clipboard"
+    );
+
     QApplication a(argc, argv);
 
     a.setWindowIcon(QIcon("/icons/app_icon.png"));

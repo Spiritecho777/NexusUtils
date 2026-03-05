@@ -6,7 +6,7 @@ TabView::TabView(const SiteItem& site, QWidget* parent)
     : QWidget(parent), m_site(site)
 {
     m_view = new QWebEngineView(this);
-    auto* page = new CustomWebPage(m_view);
+    auto* page = new CustomWebPage(site, m_view);
     m_view->setPage(page);
 
     auto* layout = new QVBoxLayout(this);

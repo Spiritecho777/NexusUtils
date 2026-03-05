@@ -9,7 +9,6 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QApplication>
-#include <QTimer>
 
 #ifdef WIN32
 #include <windows.h>
@@ -26,7 +25,7 @@ RemoteWindow::RemoteWindow(const SiteItem& site) : QWidget(nullptr), m_site(site
 	resize(1200, 720);
 
 	m_view = new QWebEngineView(this);
-	auto* page = new CustomWebPage(m_view);
+	auto* page = new CustomWebPage(site, m_view);
 	m_view->setPage(page);
 
 	m_view->setStyleSheet("background: white;");
@@ -44,9 +43,7 @@ RemoteWindow::RemoteWindow(const SiteItem& site) : QWidget(nullptr), m_site(site
 	layout->addWidget(m_view);
 	setLayout(layout);
 
-	//m_isHooked = site.isHooked;
-	m_isHooked = true; // forcer le hook pour tous les sites
-    qDebug() << "etat HOOKED = " << m_isHooked;
+	m_isHooked = site.isHooked;
 	if(m_isHooked) {
 		KeyboardHook::startHook(this);
 	}
@@ -57,6 +54,7 @@ RemoteWindow::RemoteWindow(const SiteItem& site) : QWidget(nullptr), m_site(site
 		if (!ok) return;
 		injectCredentials();
 
+#ifdef WIN32
         //PATCH pour les touches
         m_view->page()->runJavaScript(R"(
         (function() {
@@ -85,7 +83,7 @@ RemoteWindow::RemoteWindow(const SiteItem& site) : QWidget(nullptr), m_site(site
         })();
         )");
 		//PATCH
-
+#endif
 	});
 }
 
@@ -99,6 +97,7 @@ RemoteWindow::~RemoteWindow()
 
 bool RemoteWindow::keyboardHookKeyDown(int vkCode, int msg)
 {
+#ifdef WIN32
     if (!m_pressedKeys.contains(vkCode))
         m_pressedKeys.append(vkCode);
 
@@ -172,12 +171,49 @@ bool RemoteWindow::keyboardHookKeyDown(int vkCode, int msg)
             
         return true;
     }
-    
+#endif
+
+#ifdef __linux__
+    if (!m_pressedKeys.contains(vkCode))
+		m_pressedKeys.append(vkCode);
+
+	bool isAlt = m_pressedKeys.contains(64) || m_pressedKeys.contains(108);
+
+    if (vkCode == 64 || vkCode == 108)
+		return true;
+
+    if (vkCode == 133 || vkCode == 134)
+    {
+        m_view->setFocus();
+        QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
+		target->setFocus();
+        QKeyEvent event(QEvent::KeyPress, Qt::Key_Meta, Qt::MetaModifier, 0, vkCode, 0);
+        QApplication::sendEvent(target, &event);
+        return true;
+    }
+
+    if (isAlt)
+    {
+        m_view->setFocus();
+        QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
+        target->setFocus();
+
+        QKeyEvent altPress(QEvent::KeyPress, Qt::Key_Alt, Qt::AltModifier, 0, 64, 0, QString());
+        QApplication::sendEvent(target, &altPress);
+
+        QKeyEvent Press(QEvent::KeyPress, Qt::Key_Tab, Qt::AltModifier, 0, vkCode, 0, QString());
+        QApplication::sendEvent(target, &Press);
+
+        return true;
+    }
+#endif
+
     return false;
 }
 
 bool RemoteWindow::keyboardHookKeyUp(int vkCode)
 {
+#ifdef WIN32
     m_pressedKeys.removeAll(vkCode);
 
     QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
@@ -208,6 +244,27 @@ bool RemoteWindow::keyboardHookKeyUp(int vkCode)
         QApplication::sendEvent(target, &altGrRelease);
         return true;
     }
+#endif
+
+#ifdef __linux__
+    m_pressedKeys.removeAll(vkCode);
+
+    QWidget* target = m_view->focusProxy() ? m_view->focusProxy() : m_view;
+
+    if (vkCode == 133 || vkCode == 134)
+    {
+        QKeyEvent event(QEvent::KeyRelease, Qt::Key_Meta, Qt::MetaModifier, 0, vkCode, 0);
+        QApplication::sendEvent(target, &event);
+        return true;
+    }
+
+    if (vkCode == 64 || vkCode == 108)
+    {
+        QKeyEvent event(QEvent::KeyRelease, Qt::Key_Alt, Qt::AltModifier, 0, vkCode, 0);
+        QApplication::sendEvent(target, &event);
+        return true;
+    }
+#endif
 
     return false;
 }

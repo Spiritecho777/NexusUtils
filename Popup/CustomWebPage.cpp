@@ -4,7 +4,7 @@
 #include <QWebEngineSettings>
 #include <QDebug>
 
-CustomWebPage::CustomWebPage(QObject* parent) : QWebEnginePage(parent)
+CustomWebPage::CustomWebPage(const SiteItem& site, QObject* parent) : QWebEnginePage(parent), m_site(site)
 {
 	QWebEngineSettings* s = settings();
 
@@ -19,12 +19,7 @@ CustomWebPage::CustomWebPage(QObject* parent) : QWebEnginePage(parent)
 
 QWebEnginePage* CustomWebPage::createWindow(WebWindowType type)
 {
-	SiteItem popupSite;
-	popupSite.name = "";
-	popupSite.url = "";
-	popupSite.isHooked = false;
-
-	auto* popup = new RemoteWindow(popupSite);
+	auto* popup = new RemoteWindow(m_site);
 	popup->show();
 
 	return popup->view()->page();

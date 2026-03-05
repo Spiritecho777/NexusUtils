@@ -10,6 +10,9 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/record.h>
 
+#undef KeyPress
+#undef KeyRelease
+#undef FontChange
 #undef Status
 #undef Bool
 #undef None

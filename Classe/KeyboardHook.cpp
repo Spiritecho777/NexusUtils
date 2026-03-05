@@ -127,8 +127,8 @@ void KeyboardHook::ensureXRecordInitialized()
 		return;
 	}
 
-	range->device_events.first = KeyPress;
-	range->device_events.last = KeyRelease;
+	range->device_events.first = 2;
+	range->device_events.last = 3;
 
 	XRecordClientSpec clients = XRecordAllClients;
 
@@ -242,9 +242,9 @@ void KeyboardHook::keyboardCallback(XPointer priv, XRecordInterceptData* data)
 	{
 		bool handled = false;
 
-		if (type == KeyPress)
+		if (type == 2)
 			handled = focusedWindow->keyboardHookKeyDown(keycode, type);
-		else if (type == KeyRelease)
+		else if (type == 3)
 			handled = focusedWindow->keyboardHookKeyUp(keycode);
 
 		if (handled)
@@ -255,4 +255,6 @@ void KeyboardHook::keyboardCallback(XPointer priv, XRecordInterceptData* data)
 	}
 	XRecordFreeData(data);
 }
+#undef KeyPress
+#undef KeyRelease
 #endif
