@@ -55,29 +55,32 @@ RemoteWindow::RemoteWindow(const SiteItem& site) : QWidget(nullptr), m_site(site
 		injectCredentials();
 
 #ifdef WIN32
-        //PATCH pour les touches
+        //PATCH pour les touches                      ]={  }==  
         m_view->page()->runJavaScript(R"(
         (function() {
             window.addEventListener('keydown', function(e) {
                 if (!e.ctrlKey || !e.altKey) return;
                 var remap = {
-                    'û': { key: ']', keyCode: 219, code: 'Minus'        },
-                    '»': { key: '}', keyCode: 187, code: 'Equal'        },
-                    'º': { key: '¤', keyCode: 186, code: 'BracketRight' }
+                    'û': { key: '{', keyCode: 219, code: 'Minus'        }, 
+                    '»': { key: '=', keyCode: 187, code: 'Equal'        },
+                    'º': { key: '/', keyCode: 186, code: 'BracketRight' }
                 };
                 var mapped = remap[e.key];
                 if (mapped) {
+                    e.preventDefault();
                     e.stopImmediatePropagation();
-                    e.target.dispatchEvent(new KeyboardEvent('keydown', {
-                        key:      mapped.key,
-                        code:     mapped.code,
-                        keyCode:  mapped.keyCode,
-                        which:    mapped.keyCode,
-                        ctrlKey:  true,
-                        altKey:   true,
-                        bubbles:  true,
-                        cancelable: true
-                    }));
+                    setTimeout(function() {
+                        document.activeElement.dispatchEvent(new KeyboardEvent('keydown', {
+                            key:      mapped.key,
+                            code:     mapped.code,
+                            keyCode:  mapped.keyCode,
+                            which:    mapped.keyCode,
+                            ctrlKey:  true,
+                            altKey:   true,
+                            bubbles:  true,
+                            cancelable: true
+                        }));
+                    },0);
                 }
             }, true);
         })();

@@ -65,11 +65,11 @@ fi
 echo "Distribution détectée : $DISTRO"
 
 # Liste des dépendances communes (exemple)
-DEPSU="libxtst6 libxtst-dev x11proto-record-dev"
-DEPSA="libxtst xorg-recordproto"
+DEPSU="libxtst6 libxtst-dev x11proto-record-dev qt6-webengine"
+DEPSA="libxtst xorg-recordproto qt6-webengine"
 DEPSAA=""
-DEPSF="libXtst libXtst-devel xorg-x11-proto-devel"
-DEPSO="libXtst6 libXtst-devel xorg-x11-devel"
+DEPSF="libXtst libXtst-devel xorg-x11-proto-devel qt6-webengine"
+DEPSO="libXtst6 libXtst-devel xorg-x11-devel qt6-webengine"
 
 # Installation selon la distribution
 case "$DISTRO" in
@@ -85,7 +85,9 @@ case "$DISTRO" in
     arch)
         echo "Installation via pacman..."
         sudo pacman -Sy --noconfirm $DEPSA
-        sudo yay -S --noconfirm $DEPSAA
+        if [ -n "$DEPSAA" ]; then
+            sudo yay -S --noconfirm $DEPSAA
+        fi
         ;;
     opensuse*|suse)
         echo "Installation via zypper..."

@@ -46,7 +46,7 @@ function Build-Windows-Web {
 
 	Remove-Item "build" -Recurse -Force
 
-	cmake -B build -S . -G "Visual Studio 17 2022" -T v143 -DCMAKE_PREFIX_PATH=C:/Qt/6.10.2/Static/msvc
+	cmake -B build -S . -G "Visual Studio 17 2022" -T v143 -DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/Static/msvc" -DQt6WebEngineWidgets_DIR=C:/Qt/6.10.2/msvc2022_64/lib/cmake/Qt6WebEngineWidgets
 
 	cmake --build build --config Release
 
@@ -60,7 +60,7 @@ function Build-Windows-Web-OpenSSL {
 
 	Remove-Item "build" -Recurse -Force
 
-	cmake -B build -S . -G "Visual Studio 17 2022" -T v143 -DCMAKE_PREFIX_PATH=C:/Qt/6.10.2/Static/msvc -DOPENSSL_ROOT_DIR=C:/dev/vcpkg/installed/x64-windows-static -DOPENSSL_USE_STATIC_LIBS=ON
+	cmake -B build -S . -G "Visual Studio 17 2022" -T v143 -DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/Static/msvc" -DQt6WebEngineWidgets_DIR=C:/Qt/6.10.2/msvc2022_64/lib/cmake/Qt6WebEngineWidgets -DOPENSSL_ROOT_DIR=C:/dev/vcpkg/installed/x64-windows-static -DOPENSSL_USE_STATIC_LIBS=ON
 
 	cmake --build build --config Release
 
@@ -86,7 +86,8 @@ cmake --build /home/echo/Projet/$ProjectName/build-linux
 
 mkdir -p /home/echo/Projet/$ProjectName/package
 cp /home/echo/Projet/$ProjectName/build-linux/$ProjectName /home/echo/Projet/$ProjectName/package/
-cp -r /mnt/c/Users/Asumi/source/repos/$ProjectName/Asset /home/echo/Projet/$ProjectName/package/
+cp /home/echo/Projet/$ProjectName/build-linux/Asset/install.sh /home/echo/Projet/$ProjectName/package/
+cp /home/echo/Projet/$ProjectName/build-linux/Asset/Icone.png /home/echo/Projet/$ProjectName/package/
 
 cd /home/echo/Projet/$ProjectName/package
 tar -czf ../$ProjectName.tar.gz *
@@ -116,7 +117,8 @@ cmake --build /home/echo/Projet/$ProjectName/build-linux
 
 mkdir -p /home/echo/Projet/$ProjectName/package
 cp /home/echo/Projet/$ProjectName/build-linux/$ProjectName /home/echo/Projet/$ProjectName/package/
-cp -r /mnt/c/Users/Asumi/source/repos/$ProjectName/Asset /home/echo/Projet/$ProjectName/package/
+cp /home/echo/Projet/$ProjectName/build-linux/Asset/install.sh /home/echo/Projet/$ProjectName/package/
+cp /home/echo/Projet/$ProjectName/build-linux/Asset/Icone.png /home/echo/Projet/$ProjectName/package/
 
 cd /home/echo/Projet/$ProjectName/package
 tar -czf ../$ProjectName.tar.gz *
@@ -141,12 +143,13 @@ rm -rf /home/echo/Projet/$ProjectName/$ProjectName.tar.gz
 
 	$cmd = @"
 mkdir -p /home/echo/Projet/$ProjectName
-cmake -B /home/echo/Projet/$ProjectName/build-linux -S . -DCMAKE_PREFIX_PATH=/home/echo/Qt/6.10.2/Static/gcc
+cmake -B /home/echo/Projet/$ProjectName/build-linux -S . -DCMAKE_PREFIX_PATH=/home/echo/Qt/6.10.2/Static/gcc -DQt6WebEngineWidgets_DIR=/usr/lib/cmake/Qt6WebEngineWidgets
 cmake --build /home/echo/Projet/$ProjectName/build-linux
 
 mkdir -p /home/echo/Projet/$ProjectName/package
 cp /home/echo/Projet/$ProjectName/build-linux/$ProjectName /home/echo/Projet/$ProjectName/package/
-cp -r /mnt/c/Users/Asumi/source/repos/$ProjectName/Asset /home/echo/Projet/$ProjectName/package/
+cp /home/echo/Projet/$ProjectName/build-linux/Asset/install.sh /home/echo/Projet/$ProjectName/package/
+cp /home/echo/Projet/$ProjectName/build-linux/Asset/Icone.png /home/echo/Projet/$ProjectName/package/
 
 cd /home/echo/Projet/$ProjectName/package
 tar -czf ../$ProjectName.tar.gz *
@@ -171,12 +174,13 @@ rm -rf /home/echo/Projet/$ProjectName/$ProjectName.tar.gz
 
 	$cmd = @"
 mkdir -p /home/echo/Projet/$ProjectName
-cmake -B /home/echo/Projet/$ProjectName/build-linux -S . -DCMAKE_PREFIX_PATH=/home/echo/Qt/6.10.2/Static/gcc -DOPENSSL_ROOT_DIR=/usr
+cmake -B /home/echo/Projet/$ProjectName/build-linux -S . -DCMAKE_PREFIX_PATH=/home/echo/Qt/6.10.2/Static/gcc -DQt6WebEngineWidgets_DIR=/usr/lib/cmake/Qt6WebEngineWidgets -DOPENSSL_ROOT_DIR=/usr -DOPENSSL_CRYPTO_LIBRARY=/usr/lib/libcrypto.so -DOPENSSL_SSL_LIBRARY=/usr/lib/libssl.so
 cmake --build /home/echo/Projet/$ProjectName/build-linux
 
 mkdir -p /home/echo/Projet/$ProjectName/package
 cp /home/echo/Projet/$ProjectName/build-linux/$ProjectName /home/echo/Projet/$ProjectName/package/
-cp -r /mnt/c/Users/Asumi/source/repos/$ProjectName/Asset /home/echo/Projet/$ProjectName/package/
+cp /home/echo/Projet/$ProjectName/build-linux/Asset/install.sh /home/echo/Projet/$ProjectName/package/
+cp /home/echo/Projet/$ProjectName/build-linux/Asset/Icone.png /home/echo/Projet/$ProjectName/package/
 
 cd /home/echo/Projet/$ProjectName/package
 tar -czf ../$ProjectName.tar.gz *

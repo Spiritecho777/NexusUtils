@@ -5,6 +5,10 @@ project(NexusUtils
     LANGUAGES CXX
 )
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -43,13 +47,19 @@ if (WIN32)
 endif()
 
 # -------------------------
-# Qt
+# Qt Widgets (statique)
 # -------------------------
-find_package(Qt6 REQUIRED COMPONENTS 
-    Widgets 
-    WebEngineWidgets
-)
-qt_standard_project_setup()
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
+
+# -------------------------
+# Qt WebEngine (dynamique)
+# -------------------------
+find_package(Qt6WebEngineWidgets QUIET)
+if(Qt6WebEngineWidgets_FOUND)
+    message(STATUS "Qt WebEngineWidgets trouvé (dynamique)")
+else()
+    message(FATAL_ERROR "Qt WebEngineWidgets introuvable (dynamique)")
+endif()
 
 # -------------------------
 # Sources / Headers
@@ -125,5 +135,9 @@ target_link_libraries(${PROJECT_NAME}
 # Link Linux
 # -------------------------
 if (UNIX AND NOT APPLE)
-    target_link_libraries(${PROJECT_NAME} PRIVATE X11 Xtst)
+    target_link_libraries(${PROJECT_NAME} 
+        PRIVATE 
+            X11 
+            Xtst
+    )
 endif()
