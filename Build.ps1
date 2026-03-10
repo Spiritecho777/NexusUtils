@@ -182,28 +182,46 @@ function Build-Linux-Web-OpenSSL {
 
 		$clean = @"
 rm -rf /home/echo/Projet/$ProjectName/build-linux
-rm -rf /home/echo/Projet/$ProjectName/package
-rm -rf /home/echo/Projet/$ProjectName/$ProjectName.tar.gz
+rm -rf /home/echo/Projet/$ProjectName/AppDir
+rm -rf /home/echo/Projet/$ProjectName/$ProjectName.AppImage
 "@
-	wsl --distribution archlinux --user echo -- bash -lc "$clean"
+	wsl --distribution AlmaLinux-9 --user echo -- bash -lc "$clean"
 
 	$cmd = @"
 mkdir -p /home/echo/Projet/$ProjectName
-cmake -B /home/echo/Projet/$ProjectName/build-linux -S . -DCMAKE_PREFIX_PATH=/home/echo/Qt/6.10.2/Static/gcc -DQt6WebEngineWidgets_DIR=/usr/lib/cmake/Qt6WebEngineWidgets -DOPENSSL_ROOT_DIR=/usr -DOPENSSL_CRYPTO_LIBRARY=/usr/lib/libcrypto.so -DOPENSSL_SSL_LIBRARY=/usr/lib/libssl.so
+cmake -B /home/echo/Projet/$ProjectName/build-linux -S . -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR=/usr -DOPENSSL_CRYPTO_LIBRARY=/usr/lib64/libcrypto.so -DOPENSSL_SSL_LIBRARY=/usr/lib64/libssl.so
 cmake --build /home/echo/Projet/$ProjectName/build-linux
 
-mkdir -p /home/echo/Projet/$ProjectName/package
-cp /home/echo/Projet/$ProjectName/build-linux/$ProjectName /home/echo/Projet/$ProjectName/package/
-cp /home/echo/Projet/$ProjectName/build-linux/Asset/install.sh /home/echo/Projet/$ProjectName/package/
-cp /home/echo/Projet/$ProjectName/build-linux/Asset/Icone.png /home/echo/Projet/$ProjectName/package/
+mkdir -p /home/echo/Projet/$ProjectName/AppDir/usr/bin
+mkdir -p /home/echo/Projet/$ProjectName/AppDir/usr/share/applications
+mkdir -p /home/echo/Projet/$ProjectName/AppDir/usr/share/icons/hicolor/256x256/apps
 
-cd /home/echo/Projet/$ProjectName/package
-tar -czf ../$ProjectName.tar.gz *
+cp /home/echo/Projet/$ProjectName/build-linux/$ProjectName /home/echo/Projet/$ProjectName/AppDir/usr/bin/
+cp /home/echo/Projet/$ProjectName/build-linux/Asset/Icone.png /home/echo/Projet/$ProjectName/AppDir/usr/share/icons/hicolor/256x256/apps/$ProjectName.png
+
+cat > /home/echo/Projet/$ProjectName/AppDir/usr/share/applications/$ProjectName.desktop << EOF
+[Desktop Entry]
+Name=$ProjectName
+Exec=$ProjectName
+Icon=$ProjectName
+Type=Application
+Categories=Utility;
+EOF
+
+export QMAKE=/usr/bin/qmake6
+export QML_SOURCES_PATHS=.
+export NO_STRIP=1
+
+cd /home/echo/Projet/$ProjectName
+
+/home/echo/Tools/linuxdeploy/usr/bin/linuxdeploy --appdir AppDir --plugin qt --output appimage
+
+mv $ProjectName-*.AppImage $ProjectName
 "@
 
-	wsl --distribution archlinux --user echo -- bash -lc "$cmd"
+	wsl --distribution AlmaLinux-9 --user echo -- bash -lc "$cmd"
 
-	wsl --distribution archlinux --user echo -- bash -lc "cat /home/echo/Projet/$ProjectName/$ProjectName.tar.gz > Deploy/$ProjectName.tar.gz"
+	wsl --distribution AlmaLinux-9 --user echo -- bash -lc "cat /home/echo/Projet/$ProjectName/$ProjectName > Deploy/$ProjectName"
 	
 	Write-Host "=== Binaire généré ==="
 }

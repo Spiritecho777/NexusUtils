@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
     );
 
     QApplication a(argc, argv);
-
+	a.setApplicationName("NexusUtils");
     a.setWindowIcon(QIcon("/icons/app_icon.png"));
 
     // Empêcher plusieurs instances

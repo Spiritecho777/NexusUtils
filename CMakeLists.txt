@@ -40,7 +40,9 @@ endif()
 # -------------------------
 # OpenSSL
 # -------------------------
-set(OPENSSL_USE_STATIC_LIBS TRUE)
+if(WIN32)
+    set(OPENSSL_USE_STATIC_LIBS TRUE)
+endif()
 find_package(OpenSSL REQUIRED)
 if (WIN32)
     add_definitions(-DOPENSSL_USE_STATIC_LIBS)

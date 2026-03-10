@@ -12,7 +12,8 @@
 SiteManager::SiteManager()
 {
 	appDirectory = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/NexusUtilsData";
-	
+	qDebug() << "AppDirectory:" << appDirectory;
+
 	QDir().mkpath(appDirectory);
 
 	filePathE = appDirectory + "/sites.enc";
@@ -34,8 +35,13 @@ QVector<SiteItem> SiteManager::getAllSites() const
 {
 	QVector<SiteItem> sites;
 	QByteArray decrypted = loadDecrypted();
+	qDebug() << "Loading sites from:" << filePathE;
+	qDebug() << "File exists:" << QFile::exists(filePathE);
+	qDebug() << "Decrypted size:" << decrypted.size();
 	QString text = QString::fromUtf8(decrypted);
+	qDebug() << "Text:" << text;
 	QStringList lines = text.split("\n", Qt::SkipEmptyParts);
+	qDebug() << "Lines count:" << lines.size();
 	for (const QString& line : lines)
 	{
 		QStringList parts = line.split("||", Qt::KeepEmptyParts);
@@ -111,6 +117,7 @@ void SiteManager::deleteSite(const SiteItem& site)
 #pragma Sécurité
 void SiteManager::SaveDecrypted(const QByteArray& plain) const
 {
+	qDebug() << "Saving to:" << filePathE;
 	CryptoUtils crypto;
 	QByteArray encrypted = crypto.encryptBytes(plain);
 
