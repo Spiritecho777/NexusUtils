@@ -22,7 +22,8 @@ function Build-Windows {
 
 	cmake --build build --config Release
 
-	cp build/Release/*.exe Deploy/
+	mkdir -p Deploy/Windows
+	cp build/Release/*.exe Deploy/Windows
 
 	Write-Host "=== Exécutable généré ==="
 }
@@ -36,7 +37,8 @@ function Build-Windows-OpenSSL {
 
 	cmake --build build --config Release
 
-	cp build/Release/*.exe Deploy/
+	mkdir -p Deploy/Windows
+	cp build/Release/*.exe Deploy/Windows
 
 	Write-Host "=== Exécutable généré ==="
 }
@@ -46,11 +48,17 @@ function Build-Windows-Web {
 
 	Remove-Item "build" -Recurse -Force
 
-	cmake -B build -S . -G "Visual Studio 17 2022" -T v143 -DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/Static/msvc" -DQt6WebEngineWidgets_DIR=C:/Qt/6.10.2/msvc2022_64/lib/cmake/Qt6WebEngineWidgets
+	cmake -B build -S . -G "Visual Studio 17 2022" -T v143 `
+	-DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/msvc2022_64" `
+	-DQt6WebEngineWidgets_DIR="C:/Qt/6.10.2/msvc2022_64/lib/cmake/Qt6WebEngineWidgets"
 
 	cmake --build build --config Release
 
-	cp build/Release/*.exe Deploy/
+	mkdir -p Deploy/Windows
+	cp build/Release/*.exe Deploy/Windows
+
+	$env:Path = "C:/Qt/6.10.2/msvc2022_64/bin;" + $env:PATH
+	windeployqt --release --no-translations "Deploy/Windows/$ProjectName.exe"
 
 	Write-Host "=== Exécutable généré ==="
 }
@@ -60,11 +68,18 @@ function Build-Windows-Web-OpenSSL {
 
 	Remove-Item "build" -Recurse -Force
 
-	cmake -B build -S . -G "Visual Studio 17 2022" -T v143 -DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/Static/msvc" -DQt6WebEngineWidgets_DIR=C:/Qt/6.10.2/msvc2022_64/lib/cmake/Qt6WebEngineWidgets -DOPENSSL_ROOT_DIR=C:/dev/vcpkg/installed/x64-windows-static -DOPENSSL_USE_STATIC_LIBS=ON
+	cmake -B build -S . -G "Visual Studio 17 2022" -T v143 `
+	-DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/msvc2022_64" `
+	-DOPENSSL_ROOT_DIR=C:/dev/vcpkg/installed/x64-windows-static `
+	-DOPENSSL_USE_STATIC_LIBS=ON
 
 	cmake --build build --config Release
 
-	cp build/Release/*.exe Deploy/
+	mkdir -p Deploy/Windows
+	cp build/Release/*.exe Deploy/Windows
+
+	$env:Path = "C:/Qt/6.10.2/msvc2022_64/bin;" + $env:PATH
+	windeployqt --release --no-translations "Deploy/Windows/$ProjectName.exe"
 
 	Write-Host "=== Exécutable généré ==="
 }

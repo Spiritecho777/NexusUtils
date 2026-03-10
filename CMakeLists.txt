@@ -49,17 +49,7 @@ endif()
 # -------------------------
 # Qt Widgets (statique)
 # -------------------------
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-
-# -------------------------
-# Qt WebEngine (dynamique)
-# -------------------------
-find_package(Qt6WebEngineWidgets QUIET)
-if(Qt6WebEngineWidgets_FOUND)
-    message(STATUS "Qt WebEngineWidgets trouvé (dynamique)")
-else()
-    message(FATAL_ERROR "Qt WebEngineWidgets introuvable (dynamique)")
-endif()
+find_package(Qt6 REQUIRED COMPONENTS Widgets WebEngineWidgets)
 
 # -------------------------
 # Sources / Headers
@@ -124,7 +114,7 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 # Link
 # -------------------------
 target_link_libraries(${PROJECT_NAME}
-    PUBLIC
+    PRIVATE
         Qt6::Widgets
         Qt6::WebEngineWidgets
         OpenSSL::SSL
