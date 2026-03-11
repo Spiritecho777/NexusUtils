@@ -13,6 +13,7 @@
 
 #include <openssl/evp.h>
 #include <openssl/rand.h>
+#include <openssl/conf.h>
 
 int main(int argc, char* argv[])
 {
@@ -30,6 +31,9 @@ int main(int argc, char* argv[])
     QApplication a(argc, argv);
 	a.setApplicationName("NexusUtils");
     a.setWindowIcon(QIcon("/icons/app_icon.png"));
+
+	OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CONFIG, nullptr);
+    RAND_poll();
 
     // Empêcher plusieurs instances
     QString lockPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/NexusUtils.lock";

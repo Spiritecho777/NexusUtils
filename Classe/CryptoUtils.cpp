@@ -114,9 +114,6 @@ QByteArray CryptoUtils::encryptBytes(const QByteArray& plain) const
     secureWipe(buffer);
     EVP_CIPHER_CTX_free(ctx);
 
-    qDebug() << "Encrypt - plain size:" << plain.size();
-    qDebug() << "Encrypt - result size:" << encrypted.size();
-
     return encrypted;
 }
 
@@ -175,10 +172,6 @@ QByteArray CryptoUtils::decryptBytes(const QByteArray& encrypted) const
 
     secureWipe(key);
     EVP_CIPHER_CTX_free(ctx);
-
-    qDebug() << "Decrypt - encrypted size:" << encrypted.size();
-    qDebug() << "Decrypt - key size:" << key.size();
-    qDebug() << "Decrypt - iv:" << iv.toHex();
 
     return decrypted;
 }

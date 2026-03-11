@@ -13,6 +13,27 @@ if (Test-Path "Deploy"){
 
 mkdir "Deploy"
 
+function Get-CMakeVersion {
+    $cmakeFile = "build/CMakeCache.txt"
+
+    if (!(Test-Path $cmakeFile)) {
+        Write-Host "CMakeCache.txt introuvable, version par défaut 1.0.0"
+        return "1.0.0"
+    }
+
+    $line = Select-String -Path $cmakeFile -Pattern 'set\s*\(\s*APP_VERSION\s*"([0-9\.]+)"\s*\)' -AllMatches
+
+    if ($line) {
+        $match = [regex]::Match($line.Line, 'APP_VERSION\s*"([0-9\.]+)"')
+        if ($match.Success) {
+            return $match.Groups[1].Value
+        }
+    }
+
+    Write-Host "Version non trouvée dans CMakeCache.txt, version par défaut 1.0.0"
+    return "1.0.0"
+}
+
 function Build-Windows {
 	Write-Host "=== Compilation Windows ==="
 
@@ -82,6 +103,29 @@ function Build-Windows-Web-OpenSSL {
 	windeployqt --release --no-translations "Deploy/Windows/$ProjectName.exe"
 
 	Write-Host "=== Exécutable généré ==="
+}
+
+function Build-InnoSetup {
+	Write-Host "=== Génération de l'installeur Inno Setup ==="
+
+    $InnoPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+    $ScriptPath = "$(PWD)\Installer\setup.iss"
+
+    if (!(Test-Path $InnoPath)) {
+        Write-Host "Erreur : ISCC.exe introuvable"
+        exit 1
+    }
+
+    if (!(Test-Path $ScriptPath)) {
+        Write-Host "Erreur : script Inno Setup introuvable : $ScriptPath"
+        exit 1
+    }
+
+	$Version = Get-CMakeVersion
+
+    & "$InnoPath" "/dProjectName=$ProjectName" "/dProjectVersion=$Version" "$ScriptPath"
+
+    Write-Host "=== Installeur généré ==="
 }
 
 function Build-Linux {
@@ -216,19 +260,20 @@ cd /home/echo/Projet/$ProjectName
 
 /home/echo/Tools/linuxdeploy/usr/bin/linuxdeploy --appdir AppDir --plugin qt --output appimage
 
-mv $ProjectName-*.AppImage $ProjectName
+mv $ProjectName-*.AppImage $ProjectName.AppImage
 "@
 
 	wsl --distribution AlmaLinux-9 --user echo -- bash -lc "$cmd"
 
-	wsl --distribution AlmaLinux-9 --user echo -- bash -lc "cat /home/echo/Projet/$ProjectName/$ProjectName > Deploy/$ProjectName"
+	wsl --distribution AlmaLinux-9 --user echo -- bash -lc "cat /home/echo/Projet/$ProjectName/$ProjectName.AppImage > Deploy/$ProjectName.AppImage"
 	
 	Write-Host "=== Binaire généré ==="
 }
 
 switch ($Target) {
-	"all" { Build-Windows; Build-Linux }
-	"all_secure" { Build-Windows-OpenSSL; Build-Linux-OpenSSL }
-	"all_web" { Build-Windows-Web; Build-Linux-Web }
-	"all_web_secure" { Build-Windows-Web-OpenSSL; Build-Linux-Web-OpenSSL }
+	"all" { Build-Windows; Build-InnoSetup; Build-Linux }
+	"all_secure" { Build-Windows-OpenSSL; Build-InnoSetup; Build-Linux-OpenSSL }
+	"all_web" { Build-Windows-Web; Build-InnoSetup; Build-Linux-Web }
+	"all_web_secure" {Build-Windows-Web-OpenSSL; Build-InnoSetup; Build-Linux-Web-OpenSSL }
 }
+#Build-Windows-Web-OpenSSL; Build-InnoSetup;

@@ -211,6 +211,7 @@ RemoteWindow* KeyboardHook::getFocusedWindow()
 	Window focus;
 	int revert;
 	XGetInputFocus(s_queryDisplay, &focus, &revert);
+	qDebug() << "Focused window ID:" << focus;
 
 	std::lock_guard<std::mutex> lock(g_windowsMutex);
 	for (auto& window : s_windows)
@@ -237,7 +238,10 @@ void KeyboardHook::keyboardCallback(XPointer priv, XRecordInterceptData* data)
 	int type = raw[0];
 	int keycode = raw[1];
 
+	qDebug() << "keyboardCallback called, type:" << type << "keycode:" << keycode;
 	RemoteWindow* focusedWindow = getFocusedWindow();
+	qDebug() << "focusedWindow:" << focusedWindow;
+
 	if (focusedWindow && focusedWindow->isHooked())
 	{
 		bool handled = false;

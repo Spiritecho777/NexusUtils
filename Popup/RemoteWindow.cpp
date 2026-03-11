@@ -44,6 +44,9 @@ RemoteWindow::RemoteWindow(const SiteItem& site) : QWidget(nullptr), m_site(site
 	setLayout(layout);
 
 	m_isHooked = site.isHooked;
+	
+    qDebug() << "RemoteWindow: isHooked=" << m_isHooked;
+
 	if(m_isHooked) {
 		KeyboardHook::startHook(this);
 	}
