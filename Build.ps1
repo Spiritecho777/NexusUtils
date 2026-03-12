@@ -14,23 +14,23 @@ if (Test-Path "Deploy"){
 mkdir "Deploy"
 
 function Get-CMakeVersion {
-    $cmakeFile = "build/CMakeCache.txt"
+    $cmakeFile = "CMakeLists.txt"
 
     if (!(Test-Path $cmakeFile)) {
-        Write-Host "CMakeCache.txt introuvable, version par défaut 1.0.0"
+        Write-Host "CMakeLists.txt introuvable, version par défaut 1.0.0"
         return "1.0.0"
     }
 
-    $line = Select-String -Path $cmakeFile -Pattern 'set\s*\(\s*APP_VERSION\s*"([0-9\.]+)"\s*\)' -AllMatches
+    $line = Select-String -Path $cmakeFile -Pattern 'set\(APP_VERSION\s+"([0-9\.]+)"\)' | Select-Object -First 1
 
     if ($line) {
-        $match = [regex]::Match($line.Line, 'APP_VERSION\s*"([0-9\.]+)"')
+        $match = [regex]::Match($line.Line, '"([0-9\.]+)"')
         if ($match.Success) {
-            return $match.Groups[1].Value
+            return $match.Groups[1].Value.Trim()
         }
     }
 
-    Write-Host "Version non trouvée dans CMakeCache.txt, version par défaut 1.0.0"
+    Write-Host "Version non trouvée dans CMakeLists.txt, version par défaut 1.0.0"
     return "1.0.0"
 }
 
@@ -274,6 +274,6 @@ switch ($Target) {
 	"all" { Build-Windows; Build-InnoSetup; Build-Linux }
 	"all_secure" { Build-Windows-OpenSSL; Build-InnoSetup; Build-Linux-OpenSSL }
 	"all_web" { Build-Windows-Web; Build-InnoSetup; Build-Linux-Web }
-	"all_web_secure" {Build-Windows-Web-OpenSSL; Build-InnoSetup; Build-Linux-Web-OpenSSL }
+	"all_web_secure" { Build-Windows-Web-OpenSSL; Build-InnoSetup; Build-Linux-Web-OpenSSL }
 }
-#Build-Windows-Web-OpenSSL; Build-InnoSetup;
+#Build-Windows-Web-OpenSSL; Build-InnoSetup; Build-Linux-Web-OpenSSL

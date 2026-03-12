@@ -17,6 +17,10 @@ MasterPasswordPopup::MasterPasswordPopup(QWidget* parent)
 
     auto* btn = new QPushButton("Valider", this);
 
+    labelWrn = new QLabel("Attention : Ceci va réinitialiser le fichier de données", this);
+    labelWrn->setStyleSheet("color: red;");
+    layout->addWidget(labelWrn);
+
     layout->addWidget(new QLabel("Entrez le mot de passe maître :", this));
     layout->addWidget(edit);
     layout->addWidget(btn);

@@ -183,10 +183,11 @@ bool RemoteWindow::keyboardHookKeyDown(int vkCode, int msg)
     if (!m_pressedKeys.contains(vkCode))
 		m_pressedKeys.append(vkCode);
 
-	bool isAlt = m_pressedKeys.contains(64) || m_pressedKeys.contains(108);
+    bool isAlt = m_pressedKeys.contains(64);
+    bool isAltGR = m_pressedKeys.contains(108);
 
-    if (vkCode == 64 || vkCode == 108)
-		return true;
+    if (vkCode == 64) return true;
+    if (vkCode == 108) return true;
 
     if (vkCode == 133 || vkCode == 134)
     {

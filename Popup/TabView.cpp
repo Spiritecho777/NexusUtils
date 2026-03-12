@@ -35,18 +35,40 @@ void TabView::injectCredentials()
     login.replace("'", "\\'");
     password.replace("'", "\\'");
 
+    static const QStringList loginSelectors = {
+        "input[name=usermail]",
+        "input[name=login]",
+        "input[name=email]",
+        "input[name=Email]",
+        "input[name=username]",
+        "input[id=username]",
+        "input[id=login_form]",
+        "input[id=login_email]",
+        "input[id=email-field]",
+        "input[data-mgmtautomationid=username]",
+    };
+
+    static const QStringList passwordSelectors = {
+        "input[type=password]",
+        "input[name=password]",
+        "input[id=password]",
+    };
+
+    QString loginSel = loginSelectors.join(", ");
+    QString passwordSel = passwordSelectors.join(", ");
+
     QString script = QString(R"(
         (function retryFill() {
-            let loginInput = document.querySelector('input[name=usermail], input[id=username]');
-            let passwordInput = document.querySelector('input[type=password], input[name=password], input[id=password]');
+            let loginInput = document.querySelector('%1');
+            let passwordInput = document.querySelector('%2');
 
-            if (loginInput) loginInput.value = '%1';
-            if (passwordInput) passwordInput.value = '%2';
+            if (loginInput) loginInput.value = '%3';
+            if (passwordInput) passwordInput.value = '%4';
 
             if (!loginInput || !passwordInput)
                 setTimeout(retryFill, 300);
         })();
-    )").arg(login, password);
+    )").arg(loginSel, passwordSel, login, password);
 
     m_view->page()->runJavaScript(script);
 }

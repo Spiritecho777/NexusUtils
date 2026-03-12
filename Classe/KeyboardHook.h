@@ -8,7 +8,6 @@
 
 #if defined(__linux__)
 #include <X11/Xlib.h>
-#include <X11/extensions/record.h>
 
 #undef KeyPress
 #undef KeyRelease
@@ -49,14 +48,9 @@ private:
 #endif
 
 #if defined(__linux__)
-	static Display* s_display;
-	static XRecordContext s_context;
-	static bool s_running;
-
-	static void keyboardCallback(XPointer priv, XRecordInterceptData* data);
-	static void ensureXRecordInitialized();
-	static void shutdownXRecord();
-
+	static void ensureInitialized();
+	static void shutdown();
+	static void eventLoop();
 	static bool isWayland();
 	static bool isX11();
 #endif

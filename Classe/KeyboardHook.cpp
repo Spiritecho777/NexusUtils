@@ -78,14 +78,48 @@ LRESULT CALLBACK KeyboardHook::LowLevelKeyboardProc(int nCode, WPARAM wParam, LP
 
 #if defined(__linux__)
 #include <X11/Xlib.h>
-#include <X11/extensions/record.h>
-#include<cstdlib>
+#include <X11/keysym.h>
+#include <cstdlib>
+#include <thread>
+#include <atomic>
+#include <unistd.h>
 
-Display* KeyboardHook::s_display = nullptr;
+#undef KeyPress
+#undef KeyRelease
+#undef False
+#undef True
+#undef None
+#undef Bool
+#undef Status
+#undef FontChange
+#undef Complex
+#undef FocusIn
+#undef FocusOut
+#undef Expose
+#undef DestroyNotify
+#undef CursorShape
+#undef Unsorted
+#undef Below
+#undef Above
+#undef Success
+
+static const int X11_KeyPress = 2;
+static const int X11_KeyRelease = 3;
+static const int X11_False = 0;
+static const int X11_True = 1;
+static const long X11_None = 0L;
+
+static const int KC_SUPER_L = 133;
+static const int KC_SUPER_R = 134;
+static const int KC_ALT = 64;
+static const int KC_ALTGR = 108;
+
+static Display* s_grabDisplay = nullptr;
 static Display* s_queryDisplay = nullptr;
-XRecordContext KeyboardHook::s_context = 0;
-bool KeyboardHook::s_running = false;
-static std::mutex g_xrecordMutex;
+static std::thread s_eventThread;
+static std::atomic<bool> s_running{ false };
+static std::atomic<bool> s_stopRequested{ false };
+static int s_wakePipe[2] = { -1, -1 };
 static std::mutex g_windowsMutex;
 
 bool KeyboardHook::isWayland()
@@ -110,60 +144,142 @@ bool KeyboardHook::isX11()
 	return false;
 }
 
-void KeyboardHook::ensureXRecordInitialized()
+static void grabTargetKeys(Display* dpy) 
 {
-	std::lock_guard<std::mutex> lock(g_xrecordMutex);
-	if (s_running) return;
+	Window root = DefaultRootWindow(dpy);
+	XSetErrorHandler([](Display*, XErrorEvent*) -> int { return 0; });
 
-	s_display = XOpenDisplay(nullptr);
-	s_queryDisplay = XOpenDisplay(nullptr);
-	if (!s_display || !s_queryDisplay) return;
+	XGrabKey(dpy, KC_SUPER_L, AnyModifier, root, X11_False, GrabModeAsync, GrabModeAsync);
+	XGrabKey(dpy, KC_SUPER_R, AnyModifier, root, X11_False, GrabModeAsync, GrabModeAsync);
+	XGrabKey(dpy, KC_ALT, AnyModifier, root, X11_False, GrabModeAsync, GrabModeAsync);
+	XGrabKey(dpy, KC_ALTGR, AnyModifier, root, X11_False, GrabModeAsync, GrabModeAsync);
 
-	XRecordRange* range = XRecordAllocRange();
-	if (!range)
-	{
-		XCloseDisplay(s_display);
-		s_display = nullptr;
-		return;
-	}
-
-	range->device_events.first = 2;
-	range->device_events.last = 3;
-
-	XRecordClientSpec clients = XRecordAllClients;
-
-	s_context = XRecordCreateContext(s_display, 0, &clients, 1, &range, 1);
-	XFree(range);
-
-	if (!s_context)
-	{
-		XCloseDisplay(s_display);
-		s_display = nullptr;
-		return;
-	}
-
-	s_running = true;
-	XRecordEnableContextAsync(s_display, s_context, keyboardCallback, nullptr);
-	XFlush(s_display);
+	XFlush(dpy);
 }
 
-void KeyboardHook::shutdownXRecord()
+static void ungrabTargetKeys(Display* dpy)
 {
-	std::lock_guard<std::mutex> lock(g_xrecordMutex);
-	if (!s_running || !s_display) return;
+	Window root = DefaultRootWindow(dpy);
+	XUngrabKey(dpy, KC_SUPER_L, AnyModifier, root);
+	XUngrabKey(dpy, KC_SUPER_R, AnyModifier, root);
+	XUngrabKey(dpy, KC_ALT, AnyModifier, root);
+	XUngrabKey(dpy, KC_ALTGR, AnyModifier, root);
+	XFlush(dpy);
+}
 
-	XRecordDisableContext(s_display, s_context);
-	XRecordFreeContext(s_display, s_context);
-	s_context = 0;
+void KeyboardHook::eventLoop()
+{
+	int xfd = ConnectionNumber(s_grabDisplay);
 
-	XCloseDisplay(s_display);
-	s_display = nullptr;
-
-	if (s_queryDisplay)
+	while (!s_stopRequested)
 	{
-		XCloseDisplay(s_queryDisplay);
-		s_queryDisplay = nullptr;
+		fd_set fds;
+		FD_ZERO(&fds);
+		FD_SET(xfd, &fds);
+		FD_SET(s_wakePipe[0], &fds);
+		int maxfd = std::max(xfd, s_wakePipe[0]) + 1;
+
+		if (select(maxfd, &fds, nullptr, nullptr, nullptr) < 0) break;
+		if (s_stopRequested) break;
+
+		while (XPending(s_grabDisplay))
+		{
+			XEvent ev;
+			XNextEvent(s_grabDisplay, &ev);
+
+			if (ev.type != X11_KeyPress && ev.type != X11_KeyRelease)
+				continue;
+
+			int  keycode = ev.xkey.keycode;
+			bool isPress = (ev.type == X11_KeyPress);
+
+			// Grab clavier complet quand Super ou AltGr s'enfonce
+			if (isPress && (keycode == KC_SUPER_L || keycode == KC_SUPER_R || keycode == KC_ALTGR))
+			{
+				XGrabKeyboard(s_grabDisplay, DefaultRootWindow(s_grabDisplay),
+					X11_False, GrabModeAsync, GrabModeAsync, CurrentTime);
+				XFlush(s_grabDisplay);
+			}
+
+			// Relâcher le grab quand Super ou AltGr se relâche
+			if (!isPress && (keycode == KC_SUPER_L || keycode == KC_SUPER_R || keycode == KC_ALTGR))
+			{
+				XUngrabKeyboard(s_grabDisplay, CurrentTime);
+				XFlush(s_grabDisplay);
+			}
+
+			// Chercher la RemoteWindow qui a le focus
+			RemoteWindow* focused = getFocusedWindow();
+
+			bool handled = false;
+			if (focused && focused->isHooked())
+			{
+				QMetaObject::invokeMethod(focused, [focused, keycode, isPress, evType = ev.type, &handled]() {
+					if (isPress)
+						handled = focused->keyboardHookKeyDown(keycode, evType);
+					else
+						handled = focused->keyboardHookKeyUp(keycode);
+				}, Qt::BlockingQueuedConnection);
+			}
+
+			// Si non géré → relayer à la fenêtre focalisée
+			if (!handled)
+			{
+				Window targetWin;
+				int revert;
+				XGetInputFocus(s_grabDisplay, &targetWin, &revert);
+				if (targetWin != X11_None && targetWin != PointerRoot)
+				{
+					XEvent relay = ev;
+					relay.xkey.window = targetWin;
+					relay.xkey.subwindow = X11_None;
+					XSendEvent(s_grabDisplay, targetWin, X11_True,
+						isPress ? KeyPressMask : KeyReleaseMask, &relay);
+					XFlush(s_grabDisplay);
+				}
+			}
+		}
 	}
+}
+
+void KeyboardHook::ensureInitialized()
+{
+	if (s_running) return;
+
+	s_grabDisplay = XOpenDisplay(nullptr);
+	s_queryDisplay = XOpenDisplay(nullptr);
+	if (!s_grabDisplay || !s_queryDisplay) return;
+
+	if (pipe(s_wakePipe) != 0) return;
+
+	grabTargetKeys(s_grabDisplay);
+
+	s_stopRequested = false;
+	s_running = true;
+	s_eventThread = std::thread(&KeyboardHook::eventLoop);
+}
+
+void KeyboardHook::shutdown()
+{
+	if (!s_running) return;
+	s_stopRequested = true;
+
+	// Débloquer le select()
+	char c = 1;
+	write(s_wakePipe[1], &c, 1);
+
+	if (s_eventThread.joinable())
+		s_eventThread.join();
+
+	close(s_wakePipe[0]);
+	close(s_wakePipe[1]);
+	s_wakePipe[0] = s_wakePipe[1] = -1;
+
+	ungrabTargetKeys(s_grabDisplay);
+
+	XCloseDisplay(s_grabDisplay);  s_grabDisplay = nullptr;
+	XCloseDisplay(s_queryDisplay); s_queryDisplay = nullptr;
+
 	s_running = false;
 }
 
@@ -182,7 +298,7 @@ void KeyboardHook::startHook(RemoteWindow* window)
 		return;
 	}
 
-	if (!s_running) ensureXRecordInitialized();
+	if (!s_running) ensureInitialized();
 }
 
 void KeyboardHook::stopHook(RemoteWindow* window)
@@ -201,7 +317,7 @@ void KeyboardHook::stopHook(RemoteWindow* window)
 		empty = s_windows.empty();
 	}
 
-	if (empty) shutdownXRecord();
+	if (empty) shutdown();
 }
 
 RemoteWindow* KeyboardHook::getFocusedWindow()
@@ -223,42 +339,4 @@ RemoteWindow* KeyboardHook::getFocusedWindow()
 	}
 	return nullptr;
 }
-
-void KeyboardHook::keyboardCallback(XPointer priv, XRecordInterceptData* data)
-{
-	if (!data) return;
-
-	if (data->category != XRecordFromServer || !data->data || data->data_len < 2)
-	{
-		XRecordFreeData(data);
-		return;
-	}
-
-	const unsigned char* raw = data->data;
-	int type = raw[0];
-	int keycode = raw[1];
-
-	qDebug() << "keyboardCallback called, type:" << type << "keycode:" << keycode;
-	RemoteWindow* focusedWindow = getFocusedWindow();
-	qDebug() << "focusedWindow:" << focusedWindow;
-
-	if (focusedWindow && focusedWindow->isHooked())
-	{
-		bool handled = false;
-
-		if (type == 2)
-			handled = focusedWindow->keyboardHookKeyDown(keycode, type);
-		else if (type == 3)
-			handled = focusedWindow->keyboardHookKeyUp(keycode);
-
-		if (handled)
-		{
-			XRecordFreeData(data);
-			return;
-		}
-	}
-	XRecordFreeData(data);
-}
-#undef KeyPress
-#undef KeyRelease
 #endif

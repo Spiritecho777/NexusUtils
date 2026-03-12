@@ -4,6 +4,7 @@
 #include <QString>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QLabel>
 
 class MasterPasswordPopup : public QDialog
 {
@@ -16,4 +17,5 @@ public:
 
 private:
 	QLineEdit* edit;
+	QLabel* labelWrn;
 };
