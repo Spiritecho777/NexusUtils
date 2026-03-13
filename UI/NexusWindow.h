@@ -28,4 +28,7 @@ private :
 
 	void updateSiteList();
 	void addSiteItem(const SiteItem &site);
+
+protected:
+	void closeEvent(QCloseEvent* event) override;
 };

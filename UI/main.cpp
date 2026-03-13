@@ -5,6 +5,13 @@
 #include <QMessageBox>
 #include <QStandardPaths>
 #include <QIcon>
+#include <QSystemTrayIcon>
+#include <QMenu>
+#include <QTimer>
+#include <QWebEngineProfile>
+#include <QWebEngineDownloadRequest>
+#include <QFileDialog>
+#include <QFileInfo>
 
 // Fichiers locaux
 #include "NexusWindow.h"
@@ -47,6 +54,27 @@ int main(int argc, char* argv[])
             "NexusUtils est déjà en cours d'exécution.");
         return 0;
     }
+
+    // ============================================================
+    //  TÉLÉCHARGEMENTS
+    // ============================================================
+
+    QObject::connect(
+        QWebEngineProfile::defaultProfile(),
+        &QWebEngineProfile::downloadRequested,
+        [](QWebEngineDownloadRequest* download) {
+            QString dir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+            QString path = QFileDialog::getSaveFileName(
+                nullptr,
+                "Enregistrer sous",
+                dir + "/" + download->downloadFileName()
+            );
+            if (path.isEmpty()) { download->cancel(); return; }
+            download->setDownloadDirectory(QFileInfo(path).absolutePath());
+            download->setDownloadFileName(QFileInfo(path).fileName());
+            download->accept();
+        }
+    );
 
     // ============================================================
     //  PROMPT MASTER PASSWORD AU LANCEMENT
@@ -96,6 +124,38 @@ int main(int argc, char* argv[])
 
     NexusWindow w;
     w.show();
+
+    QSystemTrayIcon* tray = new QSystemTrayIcon(&a);
+
+    QIcon icon(":/Asset/Icone.png");
+    tray->setIcon(icon);
+    tray->setToolTip("NexusUtils");
+
+    QMenu* trayMenu = new QMenu();
+    QAction* actionShow = trayMenu->addAction("Ouvrir");
+    QAction* actionQuit = trayMenu->addAction("Quitter");
+
+    tray->setContextMenu(trayMenu);
+
+    QObject::connect(actionShow, &QAction::triggered, [&w]() {
+        w.show();
+        w.raise();
+        w.activateWindow();
+    });
+
+    QObject::connect(actionQuit, &QAction::triggered, &a, &QApplication::quit);
+
+    QObject::connect(tray, &QSystemTrayIcon::activated, [&w](QSystemTrayIcon::ActivationReason reason) {
+        if (reason == QSystemTrayIcon::DoubleClick) {
+            w.show();
+            w.raise();
+            w.activateWindow();
+        }
+    });
+
+    QTimer::singleShot(1000, [tray]() {
+        tray->show();
+    });
 
     return a.exec();
 }

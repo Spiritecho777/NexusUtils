@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 #include <QMessageBox>
 #include <QWidget>
+#include <QCloseEvent>
 #include <openssl/rand.h>
 #include <openssl/evp.h>
 
@@ -173,4 +174,10 @@ void NexusWindow::onDeleteSite(SiteItem site)
 {
 	siteManager.deleteSite(site);
 	updateSiteList();
+}
+
+void NexusWindow::closeEvent(QCloseEvent* event) 
+{
+	event->ignore();
+	this->hide();
 }

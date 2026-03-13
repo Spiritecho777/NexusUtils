@@ -1,6 +1,7 @@
 #include "TabView.h"
 #include "../Popup/CustomWebPage.h"
 #include <QVBoxLayout>
+#include <QTimer>
 
 TabView::TabView(const SiteItem& site, QWidget* parent)
     : QWidget(parent), m_site(site)
@@ -20,8 +21,11 @@ TabView::TabView(const SiteItem& site, QWidget* parent)
     // Injection des credentials
     connect(m_view, &QWebEngineView::loadFinished, this, [this](bool ok) {
         if (!ok) return;
-        injectCredentials();
+
+        QTimer::singleShot(800, this, [this]() {
+            injectCredentials();
         });
+    });
 }
 
 void TabView::injectCredentials()
@@ -32,8 +36,15 @@ void TabView::injectCredentials()
     QString login = m_site.username;
     QString password = m_site.password;
 
+    login.replace("\\", "\\\\");
     login.replace("'", "\\'");
+    login.replace("\n", "\\n");
+    login.replace("\r", "\\r");
+
+    password.replace("\\", "\\\\");
     password.replace("'", "\\'");
+    password.replace("\n", "\\n");
+    password.replace("\r", "\\r");
 
     static const QStringList loginSelectors = {
         "input[name=usermail]",
@@ -58,17 +69,22 @@ void TabView::injectCredentials()
     QString passwordSel = passwordSelectors.join(", ");
 
     QString script = QString(R"(
-        (function retryFill() {
-            let loginInput = document.querySelector('%1');
-            let passwordInput = document.querySelector('%2');
+        (function retryFill(attempts) {
+            if (attempts <= 0) return;
+            
+            var login    = '%1';
+            var password = '%2';
 
-            if (loginInput) loginInput.value = '%3';
-            if (passwordInput) passwordInput.value = '%4';
+            let loginInput = document.querySelector('%3');
+            let passwordInput = document.querySelector('%4');
+
+            if (loginInput) loginInput.value = login;
+            if (passwordInput) passwordInput.value = password;
 
             if (!loginInput || !passwordInput)
-                setTimeout(retryFill, 300);
-        })();
-    )").arg(loginSel, passwordSel, login, password);
+                setTimeout(function() { retryFill(attempts - 1); }, 500);
+        })(20);
+    )").arg(login, password, loginSel, passwordSel);
 
     m_view->page()->runJavaScript(script);
 }
