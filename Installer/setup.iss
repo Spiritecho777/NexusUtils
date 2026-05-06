@@ -4,7 +4,7 @@
 ; Configuration générale
 ; ============================
 [Setup]
-AppId={{A1B2C3D4-E5F6-1234-9876-ABCDEF123456}}
+AppId={{#AppId}}
 AppName={#ProjectName}
 AppVersion={#ProjectVersion}
 
