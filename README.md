@@ -77,7 +77,7 @@ Known Limitations
 
 Linux keyboard hook does not work on Wayland (X11 only).
 Some complex login forms may require manual adjustment of selectors in TabView.cpp / RemoteWindow.cpp.
-WebEngine requires proper deployment of Qt libraries on Windows.
+The Windows installer (Inno Setup) includes all necessary Qt libraries.
 
 
 License
