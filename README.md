@@ -81,7 +81,8 @@ WebEngine requires proper deployment of Qt libraries on Windows.
 
 
 License
-This project is private / internal use. All rights reserved.
+This project is under the MIT license.
+Do what you want
 
 Author
 Built with ❤️ using Qt6 and C++17.
